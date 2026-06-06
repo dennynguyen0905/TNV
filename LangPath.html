@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LangPath — Language Learning Platform</title>
+  <link rel="stylesheet" href="tokens.css">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <!-- Phase 1: Constants (loaded before any component) -->
+  <script src="data/constants/languages.js"></script>
+  <script src="data/constants/skills.js"></script>
+  <script src="data/constants/levels.js"></script>
+  <script src="data/constants/lesson-statuses.js"></script>
+  <script src="data/constants/roles.js"></script>
+  <script src="data/constants/job-types.js"></script>
+  <script src="data/constants/job-statuses.js"></script>
+
+  <!-- Phase 1: Mock data (loaded before any component) -->
+  <script src="data/mock/lessons.js"></script>
+  <script src="data/mock/questions.js"></script>
+  <script src="data/mock/vocabulary.js"></script>
+  <script src="data/mock/users.js"></script>
+  <script src="data/mock/worker-jobs.js"></script>
+  <script src="data/mock/media-assets.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="ui.jsx"></script>
+  <script type="text/babel" src="layout.jsx"></script>
+  <script type="text/babel" src="learning.jsx"></script>
+  <script type="text/babel" src="home-page.jsx"></script>
+  <script type="text/babel" src="language-pages.jsx"></script>
+  <script type="text/babel" src="lesson-page.jsx"></script>
+  <script type="text/babel" src="special-lessons.jsx"></script>
+  <script type="text/babel" src="auth-dashboard.jsx"></script>
+  <script type="text/babel" src="admin-pages.jsx"></script>
+  <script type="text/babel" src="app.jsx"></script>
+</body>
+</html>
