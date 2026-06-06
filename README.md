@@ -2,13 +2,13 @@
 
 ## Overview
 
-LangPath is an online language learning platform for reading, listening, dictation, grammar, and vocabulary practice. Lessons are organized by language, skill, and CEFR level (A1–C2). Learners can take quizzes, track progress, and access free and premium content.
+* [ ] LangPath is an online language learning platform for reading, listening, dictation, grammar, and vocabulary practice. Lessons are organized by language, skill, and CEFR level (A1–C2). Learners can take quizzes, track progress, and access free and premium content.
 
 **Deployed reference:** https://thang-nv.vercel.app/
 
 ## Current Status
 
-- **Stage:** Prototype (Phase 2.5 complete — prototype sign-off and migration preparation)
+- **Stage:** Phase 3 — Next.js scaffold complete (see `next-app/`). Static prototype still intact.
 - **Framework:** Plain HTML + React 18 (CDN) + Babel Standalone (no build tool)
 - **Deployment:** Vercel (static HTML file)
 - **Auth:** Mock only — no real backend yet
@@ -39,17 +39,17 @@ LangPath is an online language learning platform for reading, listening, dictati
 
 ## Target Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js App Router |
-| Language | TypeScript |
-| Styling | Tailwind CSS + shadcn/ui |
-| Forms | React Hook Form + Zod |
-| ORM | Prisma |
-| Database | PostgreSQL |
-| Auth | HTTP-only cookie sessions, RBAC |
-| Search | Database search for MVP |
-| Jobs | Worker placeholder abstraction |
+| Layer     | Technology                      |
+| --------- | ------------------------------- |
+| Framework | Next.js App Router              |
+| Language  | TypeScript                      |
+| Styling   | Tailwind CSS + shadcn/ui        |
+| Forms     | React Hook Form + Zod           |
+| ORM       | Prisma                          |
+| Database  | PostgreSQL                      |
+| Auth      | HTTP-only cookie sessions, RBAC |
+| Search    | Database search for MVP         |
+| Jobs      | Worker placeholder abstraction  |
 
 ## Current Folder Structure
 
@@ -125,37 +125,30 @@ prisma/
 docs/
 ```
 
-## Installation (Current Prototype)
+## How to Run
 
-The prototype requires no installation — it runs directly in a browser over HTTP.
+### Static prototype (no build step)
 
 ```bash
-# Clone the repo
-git clone <repo-url>
-cd ThangNV
-
-# Serve locally (file:// does not work — must use HTTP)
 npx serve .
-# Open http://localhost:3000/LangPath.html
+# open http://localhost:3000/LangPath.html
 ```
 
-## Development Commands (Current)
+### Next.js app (Phase 3 scaffold)
 
 ```bash
-npx serve .           # serve prototype locally
-python -m http.server 8080  # alternative — open http://localhost:8080/LangPath.html
-```
-
-## Development Commands (After Next.js Migration)
-
-```bash
+cd next-app
 npm install
-npm run dev           # start Next.js dev server
-npm run build         # production build
-npm run lint          # ESLint
-npm run typecheck     # TypeScript check
-npm run db:push       # push Prisma schema to database
-npm run db:seed       # seed database with sample content
+npm run dev
+# open http://localhost:3000
+```
+
+### Next.js build check
+
+```bash
+cd next-app
+npm run build        # should produce 19 routes, 0 errors
+npm run typecheck    # 0 TS errors
 ```
 
 ## Environment Variables (placeholder — needed after backend is added)
@@ -168,10 +161,10 @@ NEXT_PUBLIC_SITE_URL=https://thang-nv.vercel.app
 
 ## Planned Test Accounts
 
-| Role | Email | Password |
-|------|-------|---------|
+| Role    | Email                | Password    |
+| ------- | -------------------- | ----------- |
 | Learner | learner@langpath.dev | password123 |
-| Admin | admin@langpath.dev | password123 |
+| Admin   | admin@langpath.dev   | password123 |
 
 ## Development Conventions
 

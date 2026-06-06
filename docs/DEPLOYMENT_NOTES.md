@@ -121,9 +121,32 @@ Set these in:
 
 ---
 
-## Vercel Deployment (After Next.js Migration)
+## Phase 3 — Next.js App Local Setup
 
-1. Scaffold Next.js project: `npx create-next-app@latest`
+The Next.js scaffold lives in `next-app/`. It runs separately from the static prototype.
+
+```bash
+cd next-app
+npm install
+npm run dev
+# open http://localhost:3000
+```
+
+Build check:
+```bash
+cd next-app
+npm run build       # should pass cleanly
+npm run typecheck   # 0 TS errors
+npm run lint
+```
+
+See `docs/NEXT_MIGRATION_LOG.md` for what has been scaffolded and what remains.
+
+---
+
+## Vercel Deployment (After Next.js Migration is Complete)
+
+1. Move the root of the Vercel project to `next-app/` (or restructure)
 2. Push to `main` branch
 3. Vercel auto-detects Next.js — no additional config needed
 4. Set environment variables in Vercel dashboard

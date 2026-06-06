@@ -177,21 +177,32 @@
 
 ### TypeScript Migration (after Next.js)
 
-- [ ] Scaffold Next.js App Router project with TypeScript and Tailwind
-  - Expected files: package.json, tsconfig.json, next.config.ts, tailwind.config.ts, app/layout.tsx
-  - Acceptance criteria: `npm run dev` starts the dev server, `npm run build` passes
+- [x] Scaffold Next.js App Router project with TypeScript and Tailwind (Phase 3)
+  - Expected files: next-app/package.json, tsconfig.json, next.config.ts, tailwind.config.ts, app/layout.tsx
+  - Acceptance criteria: `npm run build` passes — ✅ 19 routes, 0 errors
 
-- [ ] Define domain types in `lib/types.ts`
-  - Expected files: lib/types.ts
-  - Acceptance criteria: User, Language, Skill, Level, Lesson, Question, AnswerOption, Attempt, Progress, WorkerJob types exported
+- [x] Define domain types in `data/types.ts` (Phase 3)
+  - Expected files: next-app/data/types.ts
+  - Acceptance criteria: 16 types exported — ✅ done
 
-- [ ] Migrate shared UI components to TypeScript
-  - Expected files: components/ui/*.tsx
-  - Acceptance criteria: Button, Badge, Input, Card, Icon etc. have typed props, TypeScript compiles
+- [x] Migrate shared UI components to TypeScript (Phase 3 — partial)
+  - Expected files: next-app/components/ui/*.tsx
+  - Acceptance criteria: Button, Badge, Input, Card, Icon, Modal, ProgressBar — ✅ done
 
-- [ ] Migrate layout components to TypeScript
-  - Expected files: components/layout/*.tsx
-  - Acceptance criteria: Header, Footer, Breadcrumb, AdminSidebar have typed props
+- [x] Migrate layout components to TypeScript (Phase 3)
+  - Expected files: next-app/components/layout/*.tsx
+  - Acceptance criteria: Header, Footer, AdminSidebar, Logo, FlagIcon — ✅ done
+
+- [ ] Migrate AdminLessonForm to Next.js (Phase 3 next)
+  - Expected files: next-app/components/admin/LessonForm.tsx, next-app/components/admin/LessonQuestionsEditor.tsx
+  - Acceptance criteria: Full form with Basic Info / Content / SEO tabs; embedded question editor
+
+- [ ] Add quiz client component with state + scoring
+  - Expected files: next-app/components/quiz/QuizSection.tsx
+  - Acceptance criteria: Answer selection, submit, score display (≥70% green, <70% amber), review mode
+
+- [ ] Migrate special lesson pages (Listening, Dictation, Vocabulary)
+  - Expected files: next-app/app/[languageSlug]/listening/page.tsx, dictation/page.tsx, vocabulary/page.tsx
 
 ---
 

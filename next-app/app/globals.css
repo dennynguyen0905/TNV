@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* LangPath Design Tokens — mirrors tokens.css from the static prototype */
+:root {
+  --blue-50: #EEF2FF; --blue-100: #DBEAFE; --blue-200: #BFDBFE;
+  --blue-500: #2563EB; --blue-600: #1D4ED8; --blue-700: #1E40AF; --blue-800: #1E3A8A;
+  --green-50: #ECFDF5; --green-100: #D1FAE5; --green-500: #059669; --green-600: #047857;
+  --amber-50: #FFFBEB; --amber-400: #F59E0B; --amber-500: #D97706; --amber-600: #B45309;
+  --red-50: #FEF2F2; --red-100: #FEE2E2; --red-500: #DC2626; --red-600: #B91C1C;
+  --n-0: #FFFFFF; --n-50: #F8FAFC; --n-100: #F1F5F9; --n-200: #E2E8F0;
+  --n-300: #CBD5E1; --n-400: #94A3B8; --n-500: #64748B; --n-600: #475569;
+  --n-700: #334155; --n-800: #1E293B; --n-900: #0F172A;
+  --bg-page: var(--n-50);
+  --bg-card: var(--n-0);
+  --border: var(--n-200);
+  --text-primary: var(--n-900);
+  --text-secondary: var(--n-500);
+  --text-muted: var(--n-400);
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --r-btn: 10px; --r-card: 16px; --r-lg: 24px; --r-input: 10px; --r-badge: 999px;
+  --shadow-card: 0 1px 3px rgba(15,23,42,0.04), 0 4px 16px rgba(15,23,42,0.06);
+  --shadow-hover: 0 4px 12px rgba(15,23,42,0.08), 0 12px 32px rgba(15,23,42,0.1);
+  --shadow-modal: 0 24px 64px rgba(15,23,42,0.18);
+  --container: 1200px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+body {
+  font-family: var(--font);
+  color: var(--text-primary);
+  background: var(--bg-page);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+a { color: var(--blue-500); text-decoration: none; }
+a:hover { color: var(--blue-700); }
+img { max-width: 100%; display: block; }
+button { font-family: var(--font); cursor: pointer; }
+input, textarea, select { font-family: var(--font); }
+h1,h2,h3,h4,h5,h6 { line-height: 1.2; color: var(--text-primary); }
+::selection { background: var(--blue-100); color: var(--blue-800); }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--n-300); border-radius: 3px; }
+
+.container { max-width: var(--container); margin: 0 auto; padding: 0 24px; }
+.sr-only { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0; }
