@@ -1,0 +1,277 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  LEARNER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum LessonStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  FILL_BLANK
+  DICTATION
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum AttemptStatus {
+  PASSED
+  FAILED
+}
+
+enum MediaType {
+  AUDIO
+  IMAGE
+  PDF
+  OTHER
+}
+
+enum WorkerJobType {
+  GENERATE_PDF
+  PROCESS_AUDIO
+  INDEX_SEARCH
+  REVALIDATE_CACHE
+}
+
+enum WorkerJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  name         String
+  role         UserRole   @default(LEARNER)
+  status       UserStatus @default(ACTIVE)
+  isPremium    Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  attempts Attempt[]
+  progress Progress[]
+}
+
+model Language {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  code        String   @unique
+  description String?
+  flagEmoji   String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lessons Lesson[]
+}
+
+model Skill {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lessons Lesson[]
+}
+
+model Level {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lessons Lesson[]
+}
+
+model Lesson {
+  id             String       @id @default(cuid())
+  title          String
+  slug           String
+  summary        String?
+  content        String?
+  languageId     String
+  skillId        String
+  levelId        String
+  status         LessonStatus @default(DRAFT)
+  isPremium      Boolean      @default(false)
+  audioUrl       String?
+  transcript     String?
+  pdfUrl         String?
+  seoTitle       String?
+  seoDescription String?
+  publishedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  language  Language   @relation(fields: [languageId], references: [id])
+  skill     Skill      @relation(fields: [skillId], references: [id])
+  level     Level      @relation(fields: [levelId], references: [id])
+  questions Question[]
+  media     Media[]
+  attempts  Attempt[]
+  progress  Progress[]
+
+  @@unique([languageId, skillId, slug])
+  @@index([languageId])
+  @@index([skillId])
+  @@index([levelId])
+  @@index([status])
+  @@index([isPremium])
+}
+
+model Question {
+  id          String       @id @default(cuid())
+  lessonId    String
+  type        QuestionType
+  prompt      String
+  answerText  String?
+  explanation String?
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  lesson         Lesson          @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  options        QuestionOption[]
+  attemptAnswers AttemptAnswer[]
+
+  @@index([lessonId])
+}
+
+model QuestionOption {
+  id         String   @id @default(cuid())
+  questionId String
+  text       String
+  isCorrect  Boolean  @default(false)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model Attempt {
+  id             String        @id @default(cuid())
+  userId         String?
+  lessonId       String
+  score          Float
+  totalQuestions Int
+  correctCount   Int
+  percentage     Float
+  status         AttemptStatus
+  createdAt      DateTime      @default(now())
+
+  user    User?          @relation(fields: [userId], references: [id])
+  lesson  Lesson         @relation(fields: [lessonId], references: [id])
+  answers AttemptAnswer[]
+
+  @@index([userId])
+  @@index([lessonId])
+}
+
+model AttemptAnswer {
+  id                String   @id @default(cuid())
+  attemptId         String
+  questionId        String
+  selectedOptionIds Json     @default("[]")
+  textAnswer        String?
+  isCorrect         Boolean
+  createdAt         DateTime @default(now())
+
+  attempt  Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id])
+
+  @@index([attemptId])
+  @@index([questionId])
+}
+
+model Progress {
+  id             String         @id @default(cuid())
+  userId         String
+  lessonId       String
+  status         ProgressStatus @default(NOT_STARTED)
+  bestPercentage Float          @default(0)
+  completedAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  lesson Lesson @relation(fields: [lessonId], references: [id])
+
+  @@unique([userId, lessonId])
+}
+
+model Media {
+  id        String    @id @default(cuid())
+  lessonId  String?
+  type      MediaType
+  url       String
+  filename  String
+  mimeType  String?
+  sizeBytes Int?
+  altText   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  lesson Lesson? @relation(fields: [lessonId], references: [id])
+
+  @@index([lessonId])
+  @@index([type])
+}
+
+model WorkerJob {
+  id             String          @id @default(cuid())
+  type           WorkerJobType
+  status         WorkerJobStatus @default(QUEUED)
+  payload        Json            @default("{}")
+  idempotencyKey String          @unique
+  attempts       Int             @default(0)
+  lastError      String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  startedAt      DateTime?
+  finishedAt     DateTime?
+
+  @@index([type])
+  @@index([status])
+  @@index([idempotencyKey])
+}

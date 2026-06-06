@@ -1,4 +1,100 @@
-# docs/NEXT_MIGRATION_LOG.md — Phase 3 Next.js Migration Log
+# docs/NEXT_MIGRATION_LOG.md — Next.js Migration Log
+
+## Phase 5A — Prisma + PostgreSQL Foundation
+
+**Date:** 2026-06-06
+**Status:** Schema, seed, singleton client, Docker helper, docs — build passing, UI still mock
+
+### What Was Done in Phase 5A
+
+**Schema (`prisma/schema.prisma`):**
+- 9 enums: `UserRole`, `UserStatus`, `LessonStatus`, `QuestionType`, `ProgressStatus`, `AttemptStatus`, `MediaType`, `WorkerJobType`, `WorkerJobStatus`
+- 11 models: `User`, `Language`, `Skill`, `Level`, `Lesson`, `Question`, `QuestionOption`, `Attempt`, `AttemptAnswer`, `Progress`, `Media`, `WorkerJob`
+- Compound unique on Lesson: `@@unique([languageId, skillId, slug])`
+- Cascade deletes on Question → QuestionOption and Attempt → AttemptAnswer
+- Indexes on all foreign keys and common filter columns
+
+**Seed (`prisma/seed.ts`):**
+- 4 languages (English, German, French, Spanish)
+- 5 skills (Reading, Listening, Dictation, Grammar, Vocabulary)
+- 6 CEFR levels (A1–C2)
+- 2 users: `admin@example.com` / `learner@example.com` (password: `Password123!`, bcrypt hash)
+- 5 English A1 lessons with original content (no copyrighted material)
+- Questions covering all 4 types: SINGLE_CHOICE, MULTIPLE_CHOICE, FILL_BLANK, DICTATION
+- 3 media placeholders (audio + PDF)
+- 3 worker job placeholders (INDEX_SEARCH, REVALIDATE_CACHE, GENERATE_PDF)
+- Idempotent — safe to run multiple times (upserts throughout)
+
+**Client (`lib/prisma.ts`):**
+- Standard Next.js singleton pattern (avoids too-many-connections during hot reload)
+- Development: logs queries, errors, warnings
+- Production: logs errors only
+
+**Infrastructure:**
+- `docker-compose.yml` — local PostgreSQL 16 on port 5432
+- `.env.example` — all required env vars with safe defaults
+- `docs/DATABASE_SETUP.md` — step-by-step local setup guide
+
+**`package.json` changes:**
+- Added scripts: `prisma:generate`, `prisma:migrate`, `prisma:seed`, `prisma:studio`, `db:reset`
+- Added `postinstall: "prisma generate"` for Vercel and CI compatibility
+- Added `prisma.seed` config pointing to `tsx prisma/seed.ts`
+- Added dependencies: `bcryptjs`, `tsx`, `@types/bcryptjs`
+
+**Build:**
+```
+npm run lint   → ✓ No ESLint warnings or errors
+npm run build  → ✓ routes compiled, 0 TypeScript errors
+```
+
+### Known State After Phase 5A
+
+- Admin and learner UI still reads from `data/mock/` — Prisma is not wired to any page yet
+- Auth is still placeholder (no real session)
+- Migration requires a running PostgreSQL — see `docs/DATABASE_SETUP.md`
+
+### Commands to Initialize the Database
+
+```bash
+cp .env.example .env                        # configure DATABASE_URL
+docker compose up -d                        # start local PostgreSQL
+npm install                                 # also runs prisma generate via postinstall
+npx prisma migrate dev --name init          # create all tables
+npx prisma db seed                          # load seed data
+npx prisma studio                           # optional: browse data in browser
+```
+
+---
+
+## Phase 4 — Mock UI Complete
+
+**Date:** 2026-06-06
+**Status:** Interactive admin forms, quiz runner, special lesson types — build passing
+
+### What Was Done in Phase 4
+
+**Admin:**
+- `components/admin/LessonForm.tsx` — full lesson create/edit form (client component) with embedded Q&A editor supporting all 4 question types
+- `/admin/lessons` — search + skill/status filters + toggle premium + delete confirmation
+- `/admin/questions` — search + type filter + delete confirmation
+- `/admin/languages` — activate/deactivate toggle
+- `/admin/users` — search + role filter + toggle premium + delete confirmation
+- `/admin/media` — search + type filter + delete confirmation
+- `/admin/jobs` — status+type filters + cancel PENDING/RUNNING + trigger job modal
+
+**Learner:**
+- `components/quiz/QuizRunner.tsx` — interactive client component, all 4 question types, score + pass/fail, explanations after submit, retry
+- `components/lesson/DictationPractice.tsx` — per-sentence practice with check/retry
+- `components/lesson/VocabCards.tsx` — tap-to-reveal flashcards with Known toggle
+- Lesson detail page: skill-based routing (Listening = audio placeholder + transcript, Dictation = DictationPractice, Vocabulary = VocabCards, Reading/Grammar = text + QuizRunner)
+
+**Build:**
+```
+npm run lint   → ✓ No ESLint warnings or errors
+npm run build  → ✓ 19 routes compiled, 0 TypeScript errors
+```
+
+---
 
 ## Phase 3 — Next.js App Router Scaffold
 
@@ -157,25 +253,28 @@ All data files converted from `window` globals to typed TypeScript ES modules:
 
 ---
 
-## Known Gaps
+## Known Gaps (after Phase 4)
 
-1. **AdminLessonForm** — `/admin/lessons/new` and `/admin/lessons/[id]/edit` are shells only. The full form (Basic Info, Content, SEO, embedded Question Editor) is not yet migrated.
-2. **Admin interactivity** — Tables are read-only (no delete modals, no inline edit). The prototype's full CRUD is pending client-side state.
-3. **Lesson detail** — Only `first-day-school` has the full text + quiz + vocabulary. All other lessons show placeholder text.
-4. **Auth** — Login/register forms submit to nowhere. No session management.
-5. **Quiz submission** — No state management, no score calculation. Needs React client component.
-6. **ListeningLessonPage, DictationLessonPage, VocabularyPracticePage** — Not yet migrated (no routes under `/[languageSlug]/listening`, `/[languageSlug]/dictation`, `/[languageSlug]/vocabulary`).
-7. **TweaksPanel** — Removed (committed to defaults: layout=classic, cardStyle=elevated, density=comfortable).
+1. **Lesson content** — Only `first-day-school` has real text. All other lessons show a placeholder until Prisma + DB are connected.
+2. **Mock state only** — Admin CRUD (create/edit/delete) resets on page reload. No persistence.
+3. **Auth** — Login/register forms submit to nowhere. No session management.
+4. **Admin table metadata** — Client component pages lost their `<title>` metadata export (acceptable for mock phase; add server wrapper in Phase 5).
+5. **Vocabulary lesson quiz** — Vocab cards show but no quiz follows (no MOCK_QUESTIONS for vocab lessons).
+6. **Grammar skill** — Falls through to Reading UI (no dedicated grammar section).
+7. **No pagination** — All tables show all rows.
+8. **Question state isolation** — Questions edited in LessonForm and questions shown in `/admin/questions` are independent in-memory state.
 
 ---
 
-## Recommended Next Migration Steps
+## Recommended Next Steps (Phase 5)
 
-1. Migrate `AdminLessonForm` into `components/admin/LessonForm.tsx` (client component) — this is the most complex piece
-2. Add `"use client"` quiz component with React state for submission and scoring
-3. Migrate `ListeningLessonPage`, `DictationLessonPage`, `VocabularyPracticePage` routes
-4. Add interactivity to admin tables (delete modals, status toggles) as client components
-5. Add real auth after all UI is migrated
+1. `npm install prisma @prisma/client`
+2. Create `prisma/schema.prisma` matching `docs/DATA_MODEL.md`
+3. Set up PostgreSQL (local or Vercel Postgres)
+4. Run `npx prisma migrate dev --name init`
+5. Create `prisma/seed.ts` with original sample content
+6. Replace `data/mock/` reads with Prisma Client queries in server components
+7. Add real auth (HTTP-only cookie sessions)
 
 ---
 

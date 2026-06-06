@@ -121,9 +121,65 @@ Set these in:
 
 ---
 
-## Phase 3 — Next.js App Local Setup
+## Phase 5A — Prisma + PostgreSQL Foundation
 
-The Next.js scaffold lives in `next-app/`. It runs separately from the static prototype.
+Phase 5A adds the real database layer. The UI remains mock-driven until Phase 5B.
+
+### Quick Start (Phase 5A)
+
+```bash
+cd next-app
+cp .env.example .env
+docker compose up -d          # start PostgreSQL 16 on port 5432
+npm install                   # runs prisma generate via postinstall
+npx prisma migrate dev --name init
+npx prisma db seed
+npm run dev
+```
+
+### Environment Variables (Phase 5A)
+
+Copy `.env.example` to `.env` and set:
+
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/language_learning_platform?schema=public"
+AUTH_SECRET="replace-with-a-secure-random-secret"
+PAYMENT_ENABLED="false"
+```
+
+All other variables in `.env.example` have safe local defaults.
+
+### Database Commands
+
+```bash
+npm run prisma:generate   # regenerate client after schema changes
+npm run prisma:migrate    # create + apply new migration
+npm run prisma:seed       # run seed (safe to repeat — uses upserts)
+npm run prisma:studio     # browser UI for database at http://localhost:5555
+npm run db:reset          # nuke and rebuild from scratch
+```
+
+### Seeded Test Accounts
+
+| Email | Password | Role |
+|-------|----------|------|
+| admin@example.com | Password123! | ADMIN |
+| learner@example.com | Password123! | LEARNER |
+
+### Production Database Notes
+
+- Use **Vercel Postgres**, **Supabase**, or **Railway** — set `DATABASE_URL` in Vercel env vars
+- Use `prisma migrate deploy` in production CI (not `migrate dev`)
+- Vercel serverless needs connection pooling (PgBouncer / Supabase pooler)
+- `postinstall` in `package.json` auto-runs `prisma generate` after `npm install`
+
+See `next-app/docs/DATABASE_SETUP.md` for the full step-by-step guide.
+
+---
+
+## Phase 4 — Next.js Mock UI Local Setup
+
+The Next.js app lives in `next-app/` and is at feature parity with the static prototype for admin and learner mock UI.
 
 ```bash
 cd next-app
@@ -135,12 +191,32 @@ npm run dev
 Build check:
 ```bash
 cd next-app
-npm run build       # should pass cleanly
-npm run typecheck   # 0 TS errors
-npm run lint
+npm run lint         # ✓ 0 warnings, 0 errors
+npm run build        # ✓ 19 routes, 0 TS errors
 ```
 
-See `docs/NEXT_MIGRATION_LOG.md` for what has been scaffolded and what remains.
+### Test admin lesson form
+
+```
+http://localhost:3000/admin/lessons/new
+http://localhost:3000/admin/lessons/1/edit
+```
+
+### Test interactive quiz
+
+```
+http://localhost:3000/english/reading/first-day-school
+http://localhost:3000/english/listening/morning-routine
+http://localhost:3000/english/dictation/simple-sentences
+```
+
+See `docs/NEXT_MIGRATION_LOG.md` for full Phase 4 changelog and remaining gaps.
+
+---
+
+## Phase 3 — Next.js App Local Setup (archived)
+
+Phase 3 scaffolded the Next.js structure. Phase 4 completed the mock UI. See migration log above.
 
 ---
 

@@ -1,6 +1,23 @@
 # docs/ADMIN_TODO.md — LangPath Admin Area TODO
 
-## Current Admin State (Phase 2.5 Complete)
+## Current Admin State (Phase 4 Complete — Next.js Mock UI)
+
+Pages built in `next-app/` (client components with React state, no DB):
+- `/admin` — Dashboard with stats
+- `/admin/lessons` — table + search/filter + toggle premium + delete confirmation + Edit links
+- `/admin/lessons/new` — full LessonForm (title, slug, summary, content, lang, skill, level, status, premium, SEO, embedded Q&A editor)
+- `/admin/lessons/[id]/edit` — LessonForm pre-filled from ADMIN_MOCK_LESSONS + MOCK_QUESTIONS
+- `/admin/questions` — table + search + type filter + delete confirmation
+- `/admin/languages` — table + activate/deactivate toggle
+- `/admin/users` — table + search + role filter + toggle premium + delete confirmation
+- `/admin/media` — table + search + type filter + delete confirmation
+- `/admin/jobs` — table + status/type filters + cancel PENDING/RUNNING + trigger job modal
+
+All admin changes live in React state — **lost on page reload** until Prisma is connected.
+
+---
+
+## Admin State (Phase 2.5 Complete — Static Prototype)
 
 Pages that exist and work (mock data, React state):
 - `AdminDashboard` — stats derived from mock data, recent lessons/users lists

@@ -8,14 +8,16 @@
 
 ## Current Status
 
-- **Stage:** Phase 3 — Next.js scaffold complete (see `next-app/`). Static prototype still intact.
-- **Framework:** Plain HTML + React 18 (CDN) + Babel Standalone (no build tool)
-- **Deployment:** Vercel (static HTML file)
+- **Stage:** Phase 4 complete — Next.js mock UI with interactive admin forms, quiz runner, and special lesson types.
+- **Framework (production target):** Next.js 15.3.4 + React 19 + TypeScript + Tailwind CSS (see `next-app/`)
+- **Framework (static prototype):** Plain HTML + React 18 (CDN) + Babel Standalone — untouched
+- **Deployment:** Vercel (static HTML file — Next.js deploy pending Prisma setup)
 - **Auth:** Mock only — no real backend yet
-- **Data:** Centralized in `data/constants/` and `data/mock/` with helper functions
-- **Admin:** All sidebar pages built — Dashboard, Lessons (with embedded question editor), Questions, Languages, Users, Media, Jobs
-- **Routing:** Hash-based URL routing for simple routes (admin pages persist on refresh)
-- **Migration:** See `docs/MIGRATION_MAP.md` for the Next.js migration contract
+- **Data:** Typed mock data in `next-app/data/`; no database connected
+- **Admin (Next.js):** Full mock CRUD — LessonForm with embedded Q&A editor, interactive tables with search/filter/delete/toggle
+- **Learner (Next.js):** Interactive QuizRunner (all 4 question types), Listening/Dictation/Vocabulary lesson UI
+- **Routing:** Next.js App Router, all routes pass `npm run build`
+- **Migration:** See `docs/MIGRATION_MAP.md` and `docs/NEXT_MIGRATION_LOG.md`
 
 ## Main Features (Current Prototype)
 
@@ -147,8 +149,23 @@ npm run dev
 
 ```bash
 cd next-app
-npm run build        # should produce 19 routes, 0 errors
-npm run typecheck    # 0 TS errors
+npm run lint         # 0 warnings, 0 errors
+npm run build        # 19 routes, 0 TS errors, 0 lint errors
+```
+
+### Test admin lesson form
+
+```
+http://localhost:3000/admin/lessons/new
+http://localhost:3000/admin/lessons/1/edit
+```
+
+### Test interactive quiz
+
+```
+http://localhost:3000/english/reading/first-day-school
+http://localhost:3000/english/listening/morning-routine
+http://localhost:3000/english/dictation/simple-sentences
 ```
 
 ## Environment Variables (placeholder — needed after backend is added)

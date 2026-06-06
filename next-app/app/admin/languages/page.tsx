@@ -1,17 +1,30 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { FlagIcon } from "@/components/layout/FlagIcon";
 import { LANGUAGES_DATA } from "@/data/constants/languages";
-
-export const metadata: Metadata = { title: "Admin — Languages" };
+import type { Language } from "@/data/types";
 
 export default function AdminLanguagesPage() {
+  const [languages, setLanguages] = useState<Language[]>(LANGUAGES_DATA);
+
+  const toggleActive = (id: string) =>
+    setLanguages((prev) =>
+      prev.map((l) => l.id === id ? { ...l, active: !l.active } : l)
+    );
+
+  const activeCount = languages.filter((l) => l.active).length;
+
   return (
     <div className="max-w-3xl">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-n-900">Languages</h1>
-          <p className="text-sm text-n-500 mt-1">{LANGUAGES_DATA.length} languages</p>
+          <p className="text-sm text-n-500 mt-1">
+            {activeCount} active · {languages.length - activeCount} inactive
+          </p>
         </div>
       </div>
 
@@ -23,10 +36,11 @@ export default function AdminLanguagesPage() {
               <th className="px-5 py-3 text-left font-medium text-n-500">Skills</th>
               <th className="px-5 py-3 text-left font-medium text-n-500">Content</th>
               <th className="px-5 py-3 text-left font-medium text-n-500">Status</th>
+              <th className="px-5 py-3 text-right font-medium text-n-500">Toggle</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-n-100">
-            {LANGUAGES_DATA.map((lang) => (
+            {languages.map((lang) => (
               <tr key={lang.id} className="hover:bg-n-50 transition-colors">
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-3">
@@ -46,6 +60,15 @@ export default function AdminLanguagesPage() {
                   <Badge color={lang.active ? "green" : "gray"}>
                     {lang.active ? "Active" : "Inactive"}
                   </Badge>
+                </td>
+                <td className="px-5 py-3 text-right">
+                  <Button
+                    variant={lang.active ? "secondary" : "primary"}
+                    size="sm"
+                    onClick={() => toggleActive(lang.id)}
+                  >
+                    {lang.active ? "Deactivate" : "Activate"}
+                  </Button>
                 </td>
               </tr>
             ))}
