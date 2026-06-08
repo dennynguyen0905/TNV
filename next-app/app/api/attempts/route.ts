@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { quizSubmissionSchema } from "@/lib/validators";
 import { gradeAndPersist } from "@/server/services/quizService";
+import { getCurrentUser } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,10 +14,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const user = await getCurrentUser();
     const result = await gradeAndPersist(
       parsed.data.lessonId,
       parsed.data.answers,
-      null // userId: Phase 5C adds real auth
+      user?.id ?? null
     );
 
     return NextResponse.json(result);

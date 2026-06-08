@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { AttemptStatus } from "@prisma/client";
 import * as attemptRepo from "@/server/repositories/attemptRepository";
+import * as progressService from "@/server/services/progressService";
 
 type QuizAnswer = {
   questionId: string;
@@ -91,6 +92,10 @@ export async function gradeAndPersist(
       };
     }),
   });
+
+  if (userId) {
+    await progressService.updateProgress(userId, lessonId, percentage);
+  }
 
   return { score: correctCount, totalQuestions: total, correctCount, percentage, passed, perQuestion };
 }

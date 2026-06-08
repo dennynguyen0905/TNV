@@ -10,6 +10,7 @@ import { DictationPractice } from "@/components/lesson/DictationPractice";
 import { VocabCards } from "@/components/lesson/VocabCards";
 import { getLessonDetailForPublic } from "@/server/services/lessonService";
 import { VOCAB_PRACTICE_WORDS } from "@/data/mock/vocabulary";
+import { getCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -29,21 +30,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function LessonDetailPage({ params }: Props) {
   const { languageSlug, skillSlug, lessonSlug } = await params;
-  const lesson = await getLessonDetailForPublic({ languageSlug, skillSlug, lessonSlug });
+  const [lesson, user] = await Promise.all([
+    getLessonDetailForPublic({ languageSlug, skillSlug, lessonSlug }),
+    getCurrentUser(),
+  ]);
   if (!lesson) notFound();
+
+  const canAccessPremium = lesson.free || user?.role === "ADMIN" || user?.isPremium === true;
 
   const isListening = lesson.skill === "Listening";
   const isDictation = lesson.skill === "Dictation";
   const isVocab = lesson.skill === "Vocabulary";
 
-  // For dictation skill: derive sentences from DICTATION-type questions
   const dictationSentences = isDictation
     ? lesson.questions
         .filter((q) => q.type === "DICTATION" || q.type === "FILL_BLANK")
         .map((q, i) => ({ id: i + 1, text: q.prompt }))
     : [];
 
-  // Fallback dictation sentences if no DB questions
   const fallbackDictation = [
     { id: 1, text: "The cat is on the table." },
     { id: 2, text: "I go to school every day." },
@@ -55,7 +59,6 @@ export default async function LessonDetailPage({ params }: Props) {
   const activeDictationSentences =
     dictationSentences.length > 0 ? dictationSentences : fallbackDictation;
 
-  // Non-dictation quiz questions (choice & fill-blank types shown in QuizRunnerDB)
   const quizQuestions = !isDictation
     ? lesson.questions.filter(
         (q) => q.type === "SINGLE_CHOICE" || q.type === "MULTIPLE_CHOICE" || q.type === "FILL_BLANK"
@@ -102,103 +105,136 @@ export default async function LessonDetailPage({ params }: Props) {
               <p className="text-n-600">{lesson.summary}</p>
             </Card>
 
-            {/* ── LISTENING ─────────────────────────────────────────── */}
-            {isListening && (
-              <Card className="p-6">
-                <h2 className="text-base font-semibold text-n-800 mb-4">Listen</h2>
-                <div className="flex items-center gap-4 bg-n-50 rounded-lg px-4 py-3 mb-4 border border-n-200">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#3b82f6"
-                      strokeWidth="2"
-                    >
-                      <polygon points="5 3 19 12 5 21 5 3" fill="#3b82f6" />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="flex-1 h-1.5 bg-n-200 rounded-full overflow-hidden">
-                        <div className="w-0 h-full bg-blue-400 rounded-full" />
-                      </div>
-                      <span className="text-xs text-n-400 shrink-0">~{lesson.estimatedMin} min</span>
-                    </div>
-                    <p className="text-xs text-n-400 italic">
-                      {lesson.audioUrl ? lesson.audioUrl : "Audio file — not yet available"}
-                    </p>
-                  </div>
+            {!canAccessPremium ? (
+              /* Premium gate */
+              <Card className="p-8 text-center border-2 border-amber-200 bg-amber-50">
+                <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                  </svg>
                 </div>
-
-                {lesson.transcript && (
-                  <>
-                    <h3 className="text-sm font-semibold text-n-700 mb-2">Transcript</h3>
-                    <div className="bg-n-50 rounded-lg p-4 text-sm text-n-700 leading-relaxed whitespace-pre-line border border-n-100">
-                      {lesson.transcript}
-                    </div>
-                  </>
-                )}
-              </Card>
-            )}
-
-            {/* ── READING / GRAMMAR ─────────────────────────────────── */}
-            {!isListening && !isDictation && !isVocab && (
-              <Card className="p-6">
-                <h2 className="text-base font-semibold text-n-800 mb-4">Read</h2>
-                {lesson.content ? (
-                  <div className="prose prose-sm max-w-none text-n-700 leading-relaxed whitespace-pre-line">
-                    {lesson.content}
-                  </div>
-                ) : (
-                  <p className="text-n-400 italic text-sm">
-                    Lesson text for &ldquo;{lesson.title}&rdquo; has not been added yet.
-                  </p>
-                )}
-              </Card>
-            )}
-
-            {/* ── DICTATION ─────────────────────────────────────────── */}
-            {isDictation && (
-              <Card className="p-6">
-                <h2 className="text-base font-semibold text-n-800 mb-4">Dictation Practice</h2>
-                <DictationPractice sentences={activeDictationSentences} />
-              </Card>
-            )}
-
-            {/* ── VOCABULARY ────────────────────────────────────────── */}
-            {isVocab && (
-              <Card className="p-6">
-                <h2 className="text-base font-semibold text-n-800 mb-4">Vocabulary</h2>
-                <VocabCards words={VOCAB_PRACTICE_WORDS} />
-              </Card>
-            )}
-
-            {/* ── QUIZ ──────────────────────────────────────────────── */}
-            {!isDictation && quizQuestions.length > 0 && (
-              <Card className="p-6">
-                <h2 className="text-base font-semibold text-n-800 mb-4">
-                  Quiz — {quizQuestions.length} question
-                  {quizQuestions.length !== 1 ? "s" : ""}
-                </h2>
-                <QuizRunnerDB
-                  questions={quizQuestions}
-                  lessonId={lesson.id}
-                  lessonTitle={lesson.title}
-                />
-              </Card>
-            )}
-
-            {!isDictation && lesson.questions.length > 0 && quizQuestions.length === 0 && (
-              <Card className="p-6">
-                <h2 className="text-base font-semibold text-n-800 mb-2">
-                  Quiz — {lesson.questions.length} questions
-                </h2>
-                <p className="text-n-400 italic text-sm">
-                  Quiz available for this lesson type via the dictation practice above.
+                <h2 className="text-lg font-semibold text-n-800 mb-2">Premium lesson</h2>
+                <p className="text-n-500 text-sm mb-4">
+                  This lesson is available to premium members.{" "}
+                  {!user && (
+                    <>
+                      <Link href="/login" className="text-blue-500 hover:underline">Log in</Link>
+                      {" "}or{" "}
+                      <Link href="/register" className="text-blue-500 hover:underline">create a free account</Link>
+                      {" "}to get started.
+                    </>
+                  )}
+                  {user && "Upgrade your account to access this lesson."}
                 </p>
+                <Link
+                  href="/"
+                  className="inline-block text-sm font-medium bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-btn transition-colors"
+                >
+                  Browse free lessons
+                </Link>
               </Card>
+            ) : (
+              <>
+                {/* ── LISTENING ─────────────────────────────────────────── */}
+                {isListening && (
+                  <Card className="p-6">
+                    <h2 className="text-base font-semibold text-n-800 mb-4">Listen</h2>
+                    <div className="flex items-center gap-4 bg-n-50 rounded-lg px-4 py-3 mb-4 border border-n-200">
+                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                        <svg
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#3b82f6"
+                          strokeWidth="2"
+                        >
+                          <polygon points="5 3 19 12 5 21 5 3" fill="#3b82f6" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="flex-1 h-1.5 bg-n-200 rounded-full overflow-hidden">
+                            <div className="w-0 h-full bg-blue-400 rounded-full" />
+                          </div>
+                          <span className="text-xs text-n-400 shrink-0">~{lesson.estimatedMin} min</span>
+                        </div>
+                        <p className="text-xs text-n-400 italic">
+                          {lesson.audioUrl ? lesson.audioUrl : "Audio file — not yet available"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {lesson.transcript && (
+                      <>
+                        <h3 className="text-sm font-semibold text-n-700 mb-2">Transcript</h3>
+                        <div className="bg-n-50 rounded-lg p-4 text-sm text-n-700 leading-relaxed whitespace-pre-line border border-n-100">
+                          {lesson.transcript}
+                        </div>
+                      </>
+                    )}
+                  </Card>
+                )}
+
+                {/* ── READING / GRAMMAR ─────────────────────────────────── */}
+                {!isListening && !isDictation && !isVocab && (
+                  <Card className="p-6">
+                    <h2 className="text-base font-semibold text-n-800 mb-4">Read</h2>
+                    {lesson.content ? (
+                      <div className="prose prose-sm max-w-none text-n-700 leading-relaxed whitespace-pre-line">
+                        {lesson.content}
+                      </div>
+                    ) : (
+                      <p className="text-n-400 italic text-sm">
+                        Lesson text for &ldquo;{lesson.title}&rdquo; has not been added yet.
+                      </p>
+                    )}
+                  </Card>
+                )}
+
+                {/* ── DICTATION ─────────────────────────────────────────── */}
+                {isDictation && (
+                  <Card className="p-6">
+                    <h2 className="text-base font-semibold text-n-800 mb-4">Dictation Practice</h2>
+                    <DictationPractice sentences={activeDictationSentences} />
+                  </Card>
+                )}
+
+                {/* ── VOCABULARY ────────────────────────────────────────── */}
+                {isVocab && (
+                  <Card className="p-6">
+                    <h2 className="text-base font-semibold text-n-800 mb-4">Vocabulary</h2>
+                    <VocabCards words={VOCAB_PRACTICE_WORDS} />
+                  </Card>
+                )}
+
+                {/* ── QUIZ ──────────────────────────────────────────────── */}
+                {!isDictation && quizQuestions.length > 0 && (
+                  <Card className="p-6">
+                    <h2 className="text-base font-semibold text-n-800 mb-4">
+                      Quiz — {quizQuestions.length} question
+                      {quizQuestions.length !== 1 ? "s" : ""}
+                    </h2>
+                    <QuizRunnerDB
+                      questions={quizQuestions}
+                      lessonId={lesson.id}
+                      lessonTitle={lesson.title}
+                    />
+                  </Card>
+                )}
+
+                {!isDictation && lesson.questions.length > 0 && quizQuestions.length === 0 && (
+                  <Card className="p-6">
+                    <h2 className="text-base font-semibold text-n-800 mb-2">
+                      Quiz — {lesson.questions.length} questions
+                    </h2>
+                    <p className="text-n-400 italic text-sm">
+                      Quiz available for this lesson type via the dictation practice above.
+                    </p>
+                  </Card>
+                )}
+              </>
             )}
           </div>
 

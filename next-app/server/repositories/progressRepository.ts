@@ -1,6 +1,24 @@
 import { prisma } from "@/lib/prisma";
 import { ProgressStatus } from "@prisma/client";
 
+export async function getProgressForUser(userId: string) {
+  return prisma.progress.findMany({
+    where: { userId },
+    include: {
+      lesson: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          language: { select: { name: true, slug: true } },
+          skill: { select: { name: true, slug: true } },
+        },
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+}
+
 export async function upsertProgress(data: {
   userId: string;
   lessonId: string;

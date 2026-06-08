@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { Logo } from "./Logo";
+import { LogoutButton } from "./LogoutButton";
+import { getCurrentUser } from "@/lib/auth";
 
-export function Header() {
+export async function Header() {
+  const user = await getCurrentUser();
+
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-n-200">
       <div className="max-w-container mx-auto px-6 h-16 flex items-center justify-between">
@@ -10,23 +14,39 @@ export function Header() {
           <Link href="/" className="text-sm font-medium text-n-600 hover:text-n-900 transition-colors">
             Home
           </Link>
-          <Link href="/dashboard" className="text-sm font-medium text-n-600 hover:text-n-900 transition-colors">
-            Dashboard
-          </Link>
+          {user && (
+            <Link href="/dashboard" className="text-sm font-medium text-n-600 hover:text-n-900 transition-colors">
+              Dashboard
+            </Link>
+          )}
+          {user?.role === "ADMIN" && (
+            <Link href="/admin" className="text-sm font-medium text-n-600 hover:text-n-900 transition-colors">
+              Admin
+            </Link>
+          )}
         </nav>
         <div className="flex items-center gap-3">
-          <Link
-            href="/login"
-            className="text-sm font-medium text-n-600 hover:text-n-900 transition-colors"
-          >
-            Log in
-          </Link>
-          <Link
-            href="/register"
-            className="text-sm font-medium bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-btn transition-colors"
-          >
-            Sign up
-          </Link>
+          {user ? (
+            <>
+              <span className="text-sm text-n-600 hidden md:block">{user.name}</span>
+              <LogoutButton />
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="text-sm font-medium text-n-600 hover:text-n-900 transition-colors"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/register"
+                className="text-sm font-medium bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-btn transition-colors"
+              >
+                Sign up
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

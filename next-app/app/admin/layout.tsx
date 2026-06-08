@@ -2,8 +2,11 @@ import Link from "next/link";
 import { AdminSidebar } from "@/components/layout/AdminSidebar";
 import { Logo } from "@/components/layout/Logo";
 import { Badge } from "@/components/ui/Badge";
+import { requireAdmin } from "@/lib/auth";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const admin = await requireAdmin();
+
   return (
     <div className="min-h-screen bg-n-50 flex flex-col">
       {/* Admin header */}
@@ -17,8 +20,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         >
           View site →
         </Link>
-        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-semibold">
-          A
+        <div
+          className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-semibold"
+          title={admin.email}
+        >
+          {admin.name.charAt(0).toUpperCase()}
         </div>
       </header>
 

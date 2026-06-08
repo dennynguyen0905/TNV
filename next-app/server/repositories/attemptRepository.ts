@@ -1,6 +1,28 @@
 import { prisma } from "@/lib/prisma";
 import { AttemptStatus } from "@prisma/client";
 
+export async function getRecentAttemptsForUser(userId: string, limit = 10) {
+  return prisma.attempt.findMany({
+    where: { userId },
+    include: {
+      lesson: {
+        select: {
+          title: true,
+          slug: true,
+          language: { select: { slug: true } },
+          skill: { select: { slug: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
+}
+
+export async function countAttemptsForUser(userId: string): Promise<number> {
+  return prisma.attempt.count({ where: { userId } });
+}
+
 export async function createAttempt(data: {
   userId?: string | null;
   lessonId: string;

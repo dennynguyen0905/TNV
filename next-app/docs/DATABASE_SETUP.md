@@ -1,4 +1,4 @@
-# Database Setup — Phase 5A / 5B
+# Database Setup — Phase 5A / 5B / 5C
 
 ## What Phase 5A Adds
 
@@ -188,9 +188,51 @@ components/quiz/QuizRunnerDB.tsx — client quiz runner that POSTs to /api/attem
 - Quiz answers are **never sent to the client** before submission — the `PublicQuestion` type in `server/mappers/questionMapper.ts` contains only id, type, prompt, options text, sortOrder.
 - Payment remains disabled (`PAYMENT_ENABLED=false`).
 
-## What Comes Next (Phase 5C)
+## Phase 5C Changes (current)
 
-1. Real HTTP-only cookie session auth (login / register)
-2. Server-side admin protection (middleware or server component guard)
-3. Role-based access control (ADMIN vs LEARNER)
-4. Learner dashboard wired to real Progress data
+Phase 5C adds HTTP-only cookie session auth, server-side RBAC, learner dashboard, and premium gating.
+
+### New migration
+
+```bash
+npx prisma migrate dev --name phase5c_auth
+npx prisma db seed
+```
+
+The migration adds the `Session` table (tokenHash stored as SHA-256 hash, raw token in cookie).
+
+### Auth endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/auth/register` | Register a new LEARNER account |
+| POST | `/api/auth/login` | Log in, set HTTP-only session cookie |
+| POST | `/api/auth/logout` | Clear session cookie + delete DB record |
+| GET  | `/api/me` | Return current user info or 401 |
+
+### Test credentials (from seed)
+
+| Email | Password | Role |
+|-------|----------|------|
+| admin@example.com | Password123! | ADMIN |
+| learner@example.com | Password123! | LEARNER |
+
+### RBAC
+
+- `/admin/**` — server-side guard in `app/admin/layout.tsx` via `requireAdmin()`; redirects to `/login` if unauthenticated, `/` if not ADMIN.
+- All admin server actions (`createLessonAction`, `updateLessonAction`, etc.) reject non-admin callers with `{ ok: false, error: "Unauthorized" }`.
+- `/dashboard` — requires login via `requireUser()`; redirects to `/login` if unauthenticated.
+- Anonymous users can browse public lessons and submit quizzes (attempt persists with `userId = null`).
+
+### Premium gate
+
+- Free lessons visible to everyone.
+- Premium lessons visible only to ADMIN or users with `isPremium = true`.
+- Non-premium authenticated users see a locked card with a "Browse free lessons" CTA.
+
+### Session security
+
+- Raw token: 32 random bytes hex-encoded, stored in HTTP-only cookie (`llp_session` by default).
+- Stored token: SHA-256 hash of the raw token — never the raw token itself.
+- Cookie flags: `httpOnly`, `sameSite: lax`, `path: /`, `secure` in production.
+- Sessions expire after 30 days; expired sessions are deleted on next access.

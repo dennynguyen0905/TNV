@@ -5,6 +5,7 @@ import { LessonStatus, QuestionType } from "@prisma/client";
 import { lessonCreateSchema, lessonUpdateSchema } from "@/lib/validators";
 import * as adminLessonService from "@/server/services/adminLessonService";
 import * as lessonRepo from "@/server/repositories/lessonRepository";
+import { getCurrentUser } from "@/lib/auth";
 
 type ActionResult = { ok: true; lessonId?: string } | { ok: false; error: string };
 
@@ -27,6 +28,12 @@ function castQuestions(
   }));
 }
 
+async function assertAdmin(): Promise<ActionResult | null> {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "ADMIN") return { ok: false, error: "Unauthorized" };
+  return null;
+}
+
 export async function createLessonAction(formData: {
   title: string;
   slug: string;
@@ -41,6 +48,9 @@ export async function createLessonAction(formData: {
   seoDescription?: string;
   questions: QuestionPayload[];
 }): Promise<ActionResult> {
+  const authErr = await assertAdmin();
+  if (authErr) return authErr;
+
   const parsed = lessonCreateSchema.safeParse(formData);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Validation failed" };
@@ -74,6 +84,9 @@ export async function updateLessonAction(formData: {
   seoDescription?: string;
   questions: QuestionPayload[];
 }): Promise<ActionResult> {
+  const authErr = await assertAdmin();
+  if (authErr) return authErr;
+
   const parsed = lessonUpdateSchema.safeParse(formData);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Validation failed" };
@@ -94,6 +107,9 @@ export async function updateLessonAction(formData: {
 }
 
 export async function archiveLessonAction(id: string): Promise<ActionResult> {
+  const authErr = await assertAdmin();
+  if (authErr) return authErr;
+
   try {
     await lessonRepo.archiveLesson(id);
     revalidatePath("/admin/lessons");
@@ -105,6 +121,9 @@ export async function archiveLessonAction(id: string): Promise<ActionResult> {
 }
 
 export async function publishLessonAction(id: string): Promise<ActionResult> {
+  const authErr = await assertAdmin();
+  if (authErr) return authErr;
+
   try {
     const lesson = await lessonRepo.getLessonByIdForAdmin(id);
     if (!lesson) return { ok: false, error: "Lesson not found" };
@@ -125,6 +144,9 @@ export async function toggleLessonPremiumAction(
   id: string,
   isPremium: boolean
 ): Promise<ActionResult> {
+  const authErr = await assertAdmin();
+  if (authErr) return authErr;
+
   try {
     await lessonRepo.updateLesson(id, { isPremium });
     revalidatePath("/admin/lessons");

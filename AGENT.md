@@ -44,11 +44,13 @@ Do not replace the existing UI without a documented reason.
 ### Data Loading Pattern
 
 Data files in `data/` are plain JavaScript (no JSX). They assign globals:
+
 ```js
 window.LANGUAGES_DATA = [...];
 window.LangPathConstants = window.LangPathConstants || {};
 window.LangPathConstants.LANGUAGES_DATA = window.LANGUAGES_DATA;
 ```
+
 These must be loaded in `LangPath.html` BEFORE any Babel JSX files. Do not add CDN or ES module imports to these files.
 
 ---
@@ -116,11 +118,13 @@ These must be loaded in `LangPath.html` BEFORE any Babel JSX files. Do not add C
 ## File Organization
 
 Current (prototype):
+
 - One JSX file per page group
 - All shared components in `ui.jsx`, `layout.jsx`, `learning.jsx`
 - All mock data in `learning.jsx` and individual page files
 
 Target (Next.js):
+
 - `app/` — Next.js App Router pages and API routes
 - `components/` — shared UI and feature components
 - `data/mock/` — mock data
@@ -179,6 +183,7 @@ Target (Next.js):
 Core hierarchy: Language → Skill → Level → Lesson
 
 Key entities:
+
 - User (id, email, name, passwordHash, role, isPremium)
 - Language (id, slug, name)
 - Skill (id, name: Reading/Listening/Dictation/Grammar/Vocabulary)
@@ -236,11 +241,13 @@ See `docs/DATA_MODEL.md` for full field definitions.
 ## Payment Deferred Rules
 
 Do NOT implement any of these in MVP:
+
 - Stripe, PayPal, MoMo, VNPay, ZaloPay, or any payment provider
 - Checkout flows, invoices, subscriptions, coupons, refunds, tax
 - Payment webhooks
 
 Only use:
+
 - `Lesson.isPremium` (boolean)
 - `User.isPremium` (boolean)
 - Admin can toggle `User.isPremium` manually for testing
