@@ -1,4 +1,4 @@
-# Database Setup — Phase 5A
+# Database Setup — Phase 5A / 5B
 
 ## What Phase 5A Adds
 
@@ -161,12 +161,36 @@ WorkerJob       — GENERATE_PDF | PROCESS_AUDIO | INDEX_SEARCH | REVALIDATE_CAC
 
 ---
 
-## What Comes Next (Phase 5B)
+## Phase 5B Changes (current)
 
-Replace mock data reads/writes with Prisma in:
+Phase 5B replaced all mock reads/writes with Prisma in:
 
-1. Public lesson catalog (server components)
-2. Admin CRUD operations (server actions)
-3. Auth (real session-based login/register)
-4. Quiz submission persistence (Attempt + AttemptAnswer)
-5. Learner dashboard (real Progress data)
+1. **Public lesson catalog** — home page, language page, skill page, lesson detail page (server components, `force-dynamic`)
+2. **Admin lesson CRUD** — list, create, edit, archive (server actions + `revalidatePath`)
+3. **Quiz persistence** — `POST /api/attempts` grades server-side, creates Attempt + AttemptAnswer; correct answers never exposed to client before submit
+4. **Progress** — updated when a user ID is available (Phase 5C adds real auth)
+
+### New architecture
+
+```
+server/repositories/   — raw Prisma queries
+server/services/       — business logic (lessonService, quizService, adminLessonService, progressService)
+server/mappers/        — Prisma → UI type conversion (lessonMapper, questionMapper)
+lib/validators.ts      — Zod schemas for all mutations
+app/admin/lessons/actions.ts  — server actions (create, update, archive, publish, togglePremium)
+app/api/attempts/route.ts     — quiz grading + Attempt persistence
+components/quiz/QuizRunnerDB.tsx — client quiz runner that POSTs to /api/attempts
+```
+
+### Security note
+
+- Admin pages are currently **not protected by server-side auth** (Phase 5C TODO).
+- Quiz answers are **never sent to the client** before submission — the `PublicQuestion` type in `server/mappers/questionMapper.ts` contains only id, type, prompt, options text, sortOrder.
+- Payment remains disabled (`PAYMENT_ENABLED=false`).
+
+## What Comes Next (Phase 5C)
+
+1. Real HTTP-only cookie session auth (login / register)
+2. Server-side admin protection (middleware or server component guard)
+3. Role-based access control (ADMIN vs LEARNER)
+4. Learner dashboard wired to real Progress data

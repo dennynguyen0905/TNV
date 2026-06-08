@@ -31,7 +31,7 @@ export default function AdminQuestionsPage() {
   const [questions, setQuestions] = useState<Question[]>(MOCK_QUESTIONS);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<"All" | QuestionType>("All");
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const filtered = questions.filter((q) => {
     const s = search.toLowerCase();

@@ -48,7 +48,7 @@ export interface Lesson {
 }
 
 export interface AdminLesson {
-  id: number;
+  id: string;
   title: string;
   slug: string;
   summary: string;
@@ -65,8 +65,8 @@ export interface AdminLesson {
 export type QuestionType = "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "FILL_BLANK" | "DICTATION";
 
 export interface Question {
-  id: number;
-  lessonId: number;
+  id: string;
+  lessonId: string;
   lessonTitle: string;
   type: QuestionType;
   prompt: string;

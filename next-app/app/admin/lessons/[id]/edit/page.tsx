@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getLessonForEdit } from "@/server/services/adminLessonService";
 import { LessonForm } from "@/components/admin/LessonForm";
-import { ADMIN_MOCK_LESSONS } from "@/data/mock/lessons";
-import { getQuestionsByLessonId } from "@/data/mock/questions";
+
+export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -10,16 +11,20 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const lesson = ADMIN_MOCK_LESSONS.find((l) => l.id === Number(id));
-  return { title: lesson ? `Edit — ${lesson.title}` : "Edit Lesson" };
+  const data = await getLessonForEdit(id);
+  return { title: data ? `Edit — ${data.adminLesson.title}` : "Edit Lesson" };
 }
 
 export default async function AdminEditLessonPage({ params }: Props) {
   const { id } = await params;
-  const lesson = ADMIN_MOCK_LESSONS.find((l) => l.id === Number(id));
-  if (!lesson) notFound();
+  const data = await getLessonForEdit(id);
+  if (!data) notFound();
 
-  const questions = getQuestionsByLessonId(lesson.id);
-
-  return <LessonForm lesson={lesson} initialQuestions={questions} />;
+  return (
+    <LessonForm
+      lesson={data.adminLesson}
+      initialQuestions={data.questions}
+      initialContent={data.content}
+    />
+  );
 }
