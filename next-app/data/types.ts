@@ -60,6 +60,7 @@ export interface AdminLesson {
   seoTitle: string;
   seoDesc: string;
   updated: string;
+  questionCount?: number;
 }
 
 export type QuestionType = "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "FILL_BLANK" | "DICTATION";

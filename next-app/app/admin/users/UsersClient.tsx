@@ -160,6 +160,7 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
                 <th className="px-5 py-3 text-left font-medium text-n-500">Role</th>
                 <th className="px-5 py-3 text-left font-medium text-n-500">Premium</th>
                 <th className="px-5 py-3 text-left font-medium text-n-500">Status</th>
+                <th className="px-5 py-3 text-left font-medium text-n-500">Activity</th>
                 <th className="px-5 py-3 text-left font-medium text-n-500">Joined</th>
                 <th className="px-5 py-3 text-right font-medium text-n-500">Actions</th>
               </tr>
@@ -221,6 +222,9 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
                           {user.status === "ACTIVE" ? "Active" : "Disabled"}
                         </Badge>
                       </button>
+                    </td>
+                    <td className="px-5 py-3 text-n-500 text-xs whitespace-nowrap">
+                      {user.attemptCount} attempts · {user.progressCount} lessons
                     </td>
                     <td className="px-5 py-3 text-n-400">{user.createdAt}</td>
                     <td className="px-5 py-3 text-right">

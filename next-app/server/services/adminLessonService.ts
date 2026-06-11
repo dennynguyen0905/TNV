@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import { LessonStatus, QuestionType } from "@prisma/client";
+import { LessonStatus, Prisma, QuestionType } from "@prisma/client";
 import * as lessonRepo from "@/server/repositories/lessonRepository";
 import * as questionRepo from "@/server/repositories/questionRepository";
 import { toAdminLesson } from "@/server/mappers/lessonMapper";
 import { toEditableQuestion } from "@/server/mappers/questionMapper";
+import { validateQuestions, requiresContent } from "@/server/services/adminQuestionService";
+import { enqueueLessonPublishJobs } from "@/server/services/adminJobService";
 
 export async function getAllLessonsForAdminList() {
   const lessons = await lessonRepo.getAllLessonsForAdmin();
@@ -56,6 +58,18 @@ export async function saveLesson(input: {
   if (!skill) throw new Error(`Skill not found: ${input.skill}`);
   if (!level) throw new Error(`Level not found: ${input.level}`);
 
+  // Publish gate: a lesson can only go live if it is content-complete and its
+  // quiz (if any) is valid. Drafts/reviews may be saved incomplete.
+  if (input.status === LessonStatus.PUBLISHED) {
+    if (requiresContent(skill.name) && (!input.content || input.content.trim() === "")) {
+      throw new Error(`${skill.name} lessons require content before publishing.`);
+    }
+    const questionError = validateQuestions(input.questions);
+    if (questionError) {
+      throw new Error(`Cannot publish: ${questionError}`);
+    }
+  }
+
   const publishedAt =
     input.status === LessonStatus.PUBLISHED
       ? await getExistingPublishedAt(input.id) ?? new Date()
@@ -63,41 +77,57 @@ export async function saveLesson(input: {
 
   let lessonId: string;
 
-  if (input.id) {
-    await lessonRepo.updateLesson(input.id, {
-      title: input.title,
-      slug: input.slug,
-      summary: input.summary,
-      content: input.content,
-      languageId: language.id,
-      skillId: skill.id,
-      levelId: level.id,
-      status: input.status,
-      isPremium: input.isPremium,
-      seoTitle: input.seoTitle,
-      seoDescription: input.seoDescription,
-      publishedAt: publishedAt ?? null,
-    });
-    lessonId = input.id;
-  } else {
-    const created = await lessonRepo.createLesson({
-      title: input.title,
-      slug: input.slug,
-      summary: input.summary,
-      content: input.content,
-      languageId: language.id,
-      skillId: skill.id,
-      levelId: level.id,
-      status: input.status,
-      isPremium: input.isPremium,
-      seoTitle: input.seoTitle,
-      seoDescription: input.seoDescription,
-      publishedAt,
-    });
-    lessonId = created.id;
+  try {
+    if (input.id) {
+      await lessonRepo.updateLesson(input.id, {
+        title: input.title,
+        slug: input.slug,
+        summary: input.summary,
+        content: input.content,
+        languageId: language.id,
+        skillId: skill.id,
+        levelId: level.id,
+        status: input.status,
+        isPremium: input.isPremium,
+        seoTitle: input.seoTitle,
+        seoDescription: input.seoDescription,
+        publishedAt: publishedAt ?? null,
+      });
+      lessonId = input.id;
+    } else {
+      const created = await lessonRepo.createLesson({
+        title: input.title,
+        slug: input.slug,
+        summary: input.summary,
+        content: input.content,
+        languageId: language.id,
+        skillId: skill.id,
+        levelId: level.id,
+        status: input.status,
+        isPremium: input.isPremium,
+        seoTitle: input.seoTitle,
+        seoDescription: input.seoDescription,
+        publishedAt,
+      });
+      lessonId = created.id;
+    }
+  } catch (err) {
+    // Unique constraint on (languageId, skillId, slug)
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      throw new Error(
+        `A lesson with slug "${input.slug}" already exists for ${language.name} · ${skill.name}.`
+      );
+    }
+    throw err;
   }
 
   await questionRepo.upsertLessonQuestions(lessonId, input.questions);
+
+  // Fire placeholder worker jobs when the lesson is (re)published.
+  if (input.status === LessonStatus.PUBLISHED) {
+    await enqueueLessonPublishJobs(lessonId, input.slug);
+  }
+
   return lessonId;
 }
 

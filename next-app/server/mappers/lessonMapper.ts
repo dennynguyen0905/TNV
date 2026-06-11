@@ -24,6 +24,7 @@ export function toAdminLesson(lesson: PrismaLessonFull): AdminLesson {
     seoTitle: lesson.seoTitle ?? "",
     seoDesc: lesson.seoDescription ?? "",
     updated: lesson.updatedAt.toISOString().split("T")[0],
+    questionCount: lesson._count?.questions ?? 0,
   };
 }
 

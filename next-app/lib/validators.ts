@@ -128,6 +128,22 @@ export const levelUpdateSchema = levelCreateSchema.extend({
   id: z.string().min(1, "Level id is required"),
 });
 
+const MEDIA_TYPES = ["AUDIO", "IMAGE", "PDF", "OTHER"] as const;
+
+export const mediaCreateSchema = z.object({
+  type: z.enum(MEDIA_TYPES),
+  url: z.string().min(1, "URL or path is required").max(500),
+  filename: z.string().min(1, "Filename is required").max(200),
+  mimeType: z.string().max(120).optional(),
+  sizeBytes: z.number().int().min(0).optional(),
+  altText: z.string().max(300).optional(),
+  lessonId: z.string().optional(),
+});
+
+export const mediaUpdateSchema = mediaCreateSchema.extend({
+  id: z.string().min(1, "Media id is required"),
+});
+
 export const registerSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   email: z.string().email("Invalid email address"),
@@ -150,3 +166,5 @@ export type SkillCreateInput = z.infer<typeof skillCreateSchema>;
 export type SkillUpdateInput = z.infer<typeof skillUpdateSchema>;
 export type LevelCreateInput = z.infer<typeof levelCreateSchema>;
 export type LevelUpdateInput = z.infer<typeof levelUpdateSchema>;
+export type MediaCreateInput = z.infer<typeof mediaCreateSchema>;
+export type MediaUpdateInput = z.infer<typeof mediaUpdateSchema>;

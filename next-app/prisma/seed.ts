@@ -143,7 +143,7 @@ async function main() {
     prisma.level.upsert({ where: { code: 'C2' }, update: {}, create: { code: 'C2', name: 'Proficient', sortOrder: 6 } }),
   ])
 
-  const [a1, , b1] = levels
+  const [a1, a2, b1] = levels
   console.log('Levels seeded: A1–C2')
 
   // ─── Users ──────────────────────────────────────────────────────────────────
@@ -391,7 +391,73 @@ Maria says the most important thing about city life is balance: enjoying the ene
     },
   })
 
-  console.log('Lessons seeded:', lessonReading.slug, lessonListening.slug, lessonDictation.slug, lessonVocabulary.slug, lessonGrammar.slug, lessonPremium.slug)
+  // Admin-editable workflow samples: one DRAFT, one REVIEW (not publicly visible).
+  const lessonDraft = await prisma.lesson.upsert({
+    where: {
+      languageId_skillId_slug: {
+        languageId: english.id,
+        skillId: reading.id,
+        slug: 'weekend-plans-draft',
+      },
+    },
+    update: {},
+    create: {
+      title: 'Weekend Plans (Draft)',
+      slug: 'weekend-plans-draft',
+      summary: 'A short A2 reading about weekend plans. Draft sample for the admin publish workflow.',
+      content: `Tom and Lucy are planning their weekend. On Saturday morning they will visit the farmers' market to buy fresh fruit and vegetables.
+
+In the afternoon, they plan to meet friends at the park for a picnic. If it rains, they will go to the cinema instead.
+
+On Sunday, Lucy wants to relax at home and read a book, while Tom is going to repair his bicycle.`,
+      languageId: english.id,
+      skillId: reading.id,
+      levelId: a2.id,
+      status: LessonStatus.DRAFT,
+      isPremium: false,
+      seoTitle: 'Weekend Plans — English Reading A2 (Draft)',
+      seoDescription: 'A2 reading about weekend plans. Draft sample lesson.',
+    },
+  })
+
+  const lessonReview = await prisma.lesson.upsert({
+    where: {
+      languageId_skillId_slug: {
+        languageId: english.id,
+        skillId: grammar.id,
+        slug: 'past-simple-review',
+      },
+    },
+    update: {},
+    create: {
+      title: 'The Past Simple Tense (In Review)',
+      slug: 'past-simple-review',
+      summary: 'An A2 grammar lesson on the past simple. Currently in review — not yet public.',
+      content: `The past simple describes finished actions in the past.
+
+**Regular verbs:** add -ed
+- work → worked
+- play → played
+
+**Irregular verbs:** have special forms
+- go → went
+- see → saw
+- have → had
+
+**Negatives and questions** use "did":
+- I did not (didn't) go.
+- Did you see the film?`,
+      languageId: english.id,
+      skillId: grammar.id,
+      levelId: a2.id,
+      status: LessonStatus.REVIEW,
+      isPremium: false,
+      seoTitle: 'Past Simple Tense — English Grammar A2 (Review)',
+      seoDescription: 'A2 grammar lesson on the past simple tense. In review.',
+    },
+  })
+
+  console.log('Lessons seeded:', lessonReading.slug, lessonListening.slug, lessonDictation.slug, lessonVocabulary.slug, lessonGrammar.slug, lessonPremium.slug, lessonDraft.slug, lessonReview.slug)
 
   // ─── Questions ──────────────────────────────────────────────────────────────
   // Delete existing questions per lesson to keep seed idempotent
@@ -584,6 +650,39 @@ Maria says the most important thing about city life is balance: enjoying the ene
       answerText: 'home',
       explanation: 'The text states that on Fridays Maria works from home.',
       sortOrder: 3,
+    },
+  })
+
+  await prisma.question.deleteMany({ where: { lessonId: lessonDraft.id } })
+
+  await prisma.question.create({
+    data: {
+      lessonId: lessonDraft.id,
+      type: QuestionType.SINGLE_CHOICE,
+      prompt: 'Where will Tom and Lucy go on Saturday morning?',
+      explanation: 'They will visit the farmers\' market to buy fresh fruit and vegetables.',
+      sortOrder: 1,
+      options: {
+        create: [
+          { text: 'To the cinema', isCorrect: false, sortOrder: 1 },
+          { text: "To the farmers' market", isCorrect: true, sortOrder: 2 },
+          { text: 'To the park', isCorrect: false, sortOrder: 3 },
+          { text: 'To the library', isCorrect: false, sortOrder: 4 },
+        ],
+      },
+    },
+  })
+
+  await prisma.question.deleteMany({ where: { lessonId: lessonReview.id } })
+
+  await prisma.question.create({
+    data: {
+      lessonId: lessonReview.id,
+      type: QuestionType.FILL_BLANK,
+      prompt: 'Past simple of "go": Yesterday I _____ to the shop.',
+      answerText: 'went',
+      explanation: '"Go" is irregular; its past simple form is "went".',
+      sortOrder: 1,
     },
   })
 

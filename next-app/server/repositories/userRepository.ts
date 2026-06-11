@@ -2,7 +2,10 @@ import { prisma } from "@/lib/prisma";
 import type { UserRole, UserStatus } from "@prisma/client";
 
 export async function getAllUsers() {
-  return prisma.user.findMany({ orderBy: { createdAt: "desc" } });
+  return prisma.user.findMany({
+    orderBy: { createdAt: "desc" },
+    include: { _count: { select: { attempts: true, progress: true } } },
+  });
 }
 
 export async function getUserById(id: string) {
