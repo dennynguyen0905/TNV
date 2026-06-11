@@ -8,6 +8,8 @@ import { Icon } from "@/components/ui/Icon";
 const navItems = [
   { label: "Dashboard",  href: "/admin",           icon: "bar-chart" },
   { label: "Languages",  href: "/admin/languages",  icon: "globe" },
+  { label: "Skills",     href: "/admin/skills",     icon: "grid" },
+  { label: "Levels",     href: "/admin/levels",     icon: "layers" },
   { label: "Lessons",    href: "/admin/lessons",    icon: "book" },
   { label: "Questions",  href: "/admin/questions",  icon: "edit" },
   { label: "Media",      href: "/admin/media",      icon: "image" },

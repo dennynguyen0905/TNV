@@ -176,7 +176,20 @@ async function main() {
     },
   })
 
-  console.log('Users seeded:', adminUser.email, learnerUser.email)
+  const premiumUser = await prisma.user.upsert({
+    where: { email: 'premium@example.com' },
+    update: {},
+    create: {
+      email: 'premium@example.com',
+      passwordHash,
+      name: 'Premium Learner',
+      role: 'LEARNER',
+      status: 'ACTIVE',
+      isPremium: true,
+    },
+  })
+
+  console.log('Users seeded:', adminUser.email, learnerUser.email, premiumUser.email)
 
   // ─── Lessons ────────────────────────────────────────────────────────────────
 

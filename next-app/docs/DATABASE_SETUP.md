@@ -94,7 +94,7 @@ Seeds:
 - 4 languages (English, German, French, Spanish)
 - 5 skills (Reading, Listening, Dictation, Grammar, Vocabulary)
 - 6 levels (A1–C2)
-- 2 users (`admin@example.com` / `learner@example.com`, both with password `Password123!`)
+- 3 users (`admin@example.com`, `learner@example.com`, `premium@example.com`, all with password `Password123!`; admin and premium have `isPremium=true`)
 - 5 English A1 lessons with questions and media
 - 3 worker job placeholders
 
@@ -236,3 +236,66 @@ The migration adds the `Session` table (tokenHash stored as SHA-256 hash, raw to
 - Stored token: SHA-256 hash of the raw token — never the raw token itself.
 - Cookie flags: `httpOnly`, `sameSite: lax`, `path: /`, `secure` in production.
 - Sessions expire after 30 days; expired sessions are deleted on next access.
+
+## Phase 5D Changes (current)
+
+Phase 5D expands the admin CMS so an admin can manage **users** and the core learning **taxonomy** (languages, skills, levels) directly from the database. It builds on the Phase 5C auth/RBAC and follows the same repository → service → mapper → server-action pattern used for lessons. **No schema migration is required** — all needed columns already exist (`User.role/status/isPremium`, `Language/Skill.isActive/sortOrder/description`). Levels are managed with their existing fields (`code`, `name`, `sortOrder`).
+
+### New admin CMS pages
+
+| Path | Purpose |
+|------|---------|
+| `/admin` | Dashboard — real DB summary cards (users, premium users, languages active/total, skills, levels, lessons, published lessons) + recent users/lessons |
+| `/admin/users` | List + manage users |
+| `/admin/languages` | List + create/edit + activate/deactivate languages |
+| `/admin/skills` | List + create/edit + activate/deactivate skills |
+| `/admin/levels` | List + create/edit CEFR levels |
+
+The sidebar (`components/layout/AdminSidebar.tsx`) now includes **Skills** and **Levels** alongside the existing items.
+
+### User management
+
+From `/admin/users` an admin can:
+
+- **Change role** between `ADMIN` and `LEARNER`. A self-demotion guard prevents the logged-in admin from removing their own admin role.
+- **Toggle `isPremium`** on any user (premium placeholder — see below).
+- **Deactivate / reactivate** (`UserStatus` `ACTIVE` ⟷ `DISABLED`). Admins cannot disable their own account. A disabled user is treated as logged out by `getCurrentUser()` and loses all access on the next request.
+- **Edit name and email**. Email is normalized to lowercase and checked for uniqueness; a clash returns a clear "Email already in use" error.
+
+Password hashes and session tokens are **never** sent to the client — the admin-safe DTO is produced by `server/mappers/userMapper.ts`.
+
+### Language / Skill / Level management
+
+- Languages and skills support **create, edit, and active/inactive toggle**. Slugs are normalized to lowercase kebab-case (`slugify`) and must be unique (language code is also unique). Public pages keep reading **active** records only, so deactivating hides a language/skill from the public site without deleting content.
+- Levels support **create and edit** (`code`, `name`, `sortOrder`); CEFR ordering is preserved via `sortOrder`. Level `code` is uppercased and must be unique.
+- Hard deletes are intentionally not exposed for taxonomy that lessons depend on; prefer deactivation (languages/skills).
+
+### Premium placeholder
+
+- `User.isPremium` is toggled from the users page; `Lesson.isPremium` continues to work from the lessons page.
+- Premium lesson access is unchanged from Phase 5C: ADMINs and `isPremium` users can open premium lessons; free lessons are open to everyone; other learners see a locked/preview state.
+- **Real payment remains deferred.** `lib/config.ts` exports `PAYMENT_ENABLED = false`. No checkout, subscriptions, webhooks, or payment providers (Stripe/PayPal/MoMo/VNPay/ZaloPay) are implemented.
+
+### Commands
+
+```bash
+npm run lint          # 0 warnings
+npm run build         # 0 errors
+npm run prisma:seed   # idempotent — safe to re-run
+# No migration needed: schema is unchanged in Phase 5D.
+```
+
+### Test credentials (from seed)
+
+| Email | Password | Role | Premium |
+|-------|----------|------|---------|
+| admin@example.com | Password123! | ADMIN | yes |
+| learner@example.com | Password123! | LEARNER | no |
+| premium@example.com | Password123! | LEARNER | yes |
+
+### Still deferred
+
+- Payments / subscriptions (`PAYMENT_ENABLED=false`).
+- Media upload to cloud storage, real PDF generation, real audio processing.
+- Search indexing (Typesense), background queues (Redis).
+- The `/admin/questions`, `/admin/media`, and `/admin/jobs` pages remain placeholders.

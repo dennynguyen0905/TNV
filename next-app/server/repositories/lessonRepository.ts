@@ -115,3 +115,11 @@ export async function archiveLesson(id: string) {
     data: { status: LessonStatus.ARCHIVED },
   });
 }
+
+export async function countLessons() {
+  return prisma.lesson.count();
+}
+
+export async function countPublishedLessons() {
+  return prisma.lesson.count({ where: { status: LessonStatus.PUBLISHED } });
+}

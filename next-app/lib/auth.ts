@@ -65,6 +65,9 @@ export async function getCurrentUser(): Promise<User | null> {
     return null;
   }
 
+  // Disabled users are treated as logged out — they lose all learner/admin access.
+  if (session.user.status === "DISABLED") return null;
+
   return session.user;
 }
 
