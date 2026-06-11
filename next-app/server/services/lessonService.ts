@@ -15,6 +15,20 @@ export async function getFeaturedFreePublicLessons(limit = 3) {
     .map(toPublicLessonCard);
 }
 
+/**
+ * Recommend published free lessons the learner has not completed yet.
+ * Simple MVP heuristic: most recently published free lessons, excluding the
+ * provided lesson ids (e.g. ones already completed).
+ */
+export async function getRecommendedLessons(excludeLessonIds: string[], limit = 4) {
+  const lessons = await lessonRepo.getPublishedLessons();
+  const exclude = new Set(excludeLessonIds);
+  return lessons
+    .filter((l) => !l.isPremium && !exclude.has(l.id))
+    .slice(0, limit)
+    .map(toPublicLessonCard);
+}
+
 export async function getLessonDetailForPublic(params: {
   languageSlug: string;
   skillSlug: string;

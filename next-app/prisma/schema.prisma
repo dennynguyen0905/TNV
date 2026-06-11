@@ -244,6 +244,7 @@ model Progress {
   lessonId       String
   status         ProgressStatus @default(NOT_STARTED)
   bestPercentage Float          @default(0)
+  lastPercentage Float          @default(0)
   completedAt    DateTime?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt

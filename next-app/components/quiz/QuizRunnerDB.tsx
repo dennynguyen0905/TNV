@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
@@ -20,6 +21,7 @@ interface QuizResult {
   correctCount: number;
   percentage: number;
   passed: boolean;
+  saved: boolean;
   perQuestion: QuestionResult[];
 }
 
@@ -125,6 +127,14 @@ export function QuizRunnerDB({ questions, lessonId, lessonTitle }: QuizRunnerDBP
               {result.passed ? "PASS" : "FAIL"}
             </Badge>
           </div>
+          {!result.saved && (
+            <p className="text-xs mt-2 opacity-80">
+              <Link href="/login" className="underline font-medium">
+                Log in
+              </Link>{" "}
+              to save this attempt and track your progress.
+            </p>
+          )}
         </div>
       )}
 

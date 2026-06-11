@@ -143,7 +143,7 @@ async function main() {
     prisma.level.upsert({ where: { code: 'C2' }, update: {}, create: { code: 'C2', name: 'Proficient', sortOrder: 6 } }),
   ])
 
-  const [a1] = levels
+  const [a1, , b1] = levels
   console.log('Levels seeded: A1–C2')
 
   // ─── Users ──────────────────────────────────────────────────────────────────
@@ -360,7 +360,38 @@ We go to school by bus.`,
     },
   })
 
-  console.log('Lessons seeded:', lessonReading.slug, lessonListening.slug, lessonDictation.slug, lessonVocabulary.slug, lessonGrammar.slug)
+  const lessonPremium = await prisma.lesson.upsert({
+    where: {
+      languageId_skillId_slug: {
+        languageId: english.id,
+        skillId: reading.id,
+        slug: 'city-life-premium',
+      },
+    },
+    update: {},
+    create: {
+      title: 'City Life and Commuting (Premium)',
+      slug: 'city-life-premium',
+      summary: 'An intermediate reading about daily commuting in a big city, with comprehension questions. Premium sample lesson.',
+      content: `Maria lives in a small apartment near the centre of the city. Every weekday she wakes up at half past six and takes the underground to work.
+
+The morning trains are always crowded. Sometimes she has to wait for a second or third train before she can get on. Despite the crowds, she prefers public transport to driving, because parking in the city is expensive and traffic is slow.
+
+On Fridays, Maria works from home. She enjoys the quiet mornings without the rush. She makes a fresh cup of coffee, opens her laptop, and starts work at nine. In the afternoon, she often takes a short walk in the park near her building.
+
+Maria says the most important thing about city life is balance: enjoying the energy of the city while finding small moments of calm.`,
+      languageId: english.id,
+      skillId: reading.id,
+      levelId: b1.id,
+      status: LessonStatus.PUBLISHED,
+      isPremium: true,
+      seoTitle: 'City Life and Commuting — English Reading B1 (Premium)',
+      seoDescription: 'Intermediate English reading about commuting and city life, with comprehension questions. Premium sample lesson.',
+      publishedAt: new Date('2026-01-25'),
+    },
+  })
+
+  console.log('Lessons seeded:', lessonReading.slug, lessonListening.slug, lessonDictation.slug, lessonVocabulary.slug, lessonGrammar.slug, lessonPremium.slug)
 
   // ─── Questions ──────────────────────────────────────────────────────────────
   // Delete existing questions per lesson to keep seed idempotent
@@ -504,6 +535,55 @@ We go to school by bus.`,
           { text: 'on Mondays', isCorrect: true, sortOrder: 4 },
         ],
       },
+    },
+  })
+
+  await prisma.question.deleteMany({ where: { lessonId: lessonPremium.id } })
+
+  await prisma.question.create({
+    data: {
+      lessonId: lessonPremium.id,
+      type: QuestionType.SINGLE_CHOICE,
+      prompt: 'How does Maria usually travel to work?',
+      explanation: 'The text says she takes the underground to work every weekday.',
+      sortOrder: 1,
+      options: {
+        create: [
+          { text: 'By car', isCorrect: false, sortOrder: 1 },
+          { text: 'By underground (metro)', isCorrect: true, sortOrder: 2 },
+          { text: 'By bicycle', isCorrect: false, sortOrder: 3 },
+          { text: 'On foot', isCorrect: false, sortOrder: 4 },
+        ],
+      },
+    },
+  })
+
+  await prisma.question.create({
+    data: {
+      lessonId: lessonPremium.id,
+      type: QuestionType.MULTIPLE_CHOICE,
+      prompt: 'Which reasons does Maria give for preferring public transport?',
+      explanation: 'She mentions that parking is expensive and traffic is slow.',
+      sortOrder: 2,
+      options: {
+        create: [
+          { text: 'Parking is expensive', isCorrect: true, sortOrder: 1 },
+          { text: 'Traffic is slow', isCorrect: true, sortOrder: 2 },
+          { text: 'Trains are never crowded', isCorrect: false, sortOrder: 3 },
+          { text: 'It is always faster', isCorrect: false, sortOrder: 4 },
+        ],
+      },
+    },
+  })
+
+  await prisma.question.create({
+    data: {
+      lessonId: lessonPremium.id,
+      type: QuestionType.FILL_BLANK,
+      prompt: 'On Fridays, Maria works from _____.',
+      answerText: 'home',
+      explanation: 'The text states that on Fridays Maria works from home.',
+      sortOrder: 3,
     },
   })
 

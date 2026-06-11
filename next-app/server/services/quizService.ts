@@ -1,7 +1,16 @@
 import { prisma } from "@/lib/prisma";
-import { AttemptStatus } from "@prisma/client";
+import { AttemptStatus, LessonStatus } from "@prisma/client";
+import type { User } from "@prisma/client";
 import * as attemptRepo from "@/server/repositories/attemptRepository";
+import * as lessonRepo from "@/server/repositories/lessonRepository";
 import * as progressService from "@/server/services/progressService";
+import { canAccessLesson } from "@/lib/permissions";
+import {
+  scoreQuestion,
+  computePercentage,
+  isPassing,
+  type GradableAnswer,
+} from "@/lib/scoring";
 
 type QuizAnswer = {
   questionId: string;
@@ -23,14 +32,36 @@ export type QuizGradeResult = {
   correctCount: number;
   percentage: number;
   passed: boolean;
+  /** True when the attempt + progress were persisted (i.e. the user is logged in). */
+  saved: boolean;
   perQuestion: QuestionResult[];
 };
+
+/** Error with a code the API route can map to an HTTP status. */
+export class QuizError extends Error {
+  constructor(message: string, public code: "NOT_FOUND" | "FORBIDDEN") {
+    super(message);
+    this.name = "QuizError";
+  }
+}
 
 export async function gradeAndPersist(
   lessonId: string,
   answers: QuizAnswer[],
-  userId?: string | null
+  user: User | null
 ): Promise<QuizGradeResult> {
+  // 1. Lesson must exist and be published — never score draft/archived content.
+  const lesson = await lessonRepo.getLessonAccessInfo(lessonId);
+  if (!lesson || lesson.status !== LessonStatus.PUBLISHED) {
+    throw new QuizError("Lesson not found", "NOT_FOUND");
+  }
+
+  // 2. Premium gate — answers are never scored for users who cannot access it.
+  if (!canAccessLesson(user, lesson)) {
+    throw new QuizError("This lesson requires premium access", "FORBIDDEN");
+  }
+
+  // 3. Load the answer key on the SERVER only.
   const questions = await prisma.question.findMany({
     where: { lessonId },
     orderBy: { sortOrder: "asc" },
@@ -42,23 +73,14 @@ export async function gradeAndPersist(
     const correctOptionIds = q.options.filter((o) => o.isCorrect).map((o) => o.id);
     const correctAnswer = q.answerText ?? "";
 
-    let isCorrect = false;
-    if (userAnswer) {
-      if (q.type === "SINGLE_CHOICE") {
-        isCorrect =
-          userAnswer.selectedOptionIds.length === 1 &&
-          correctOptionIds.includes(userAnswer.selectedOptionIds[0]);
-      } else if (q.type === "MULTIPLE_CHOICE") {
-        const selected = new Set(userAnswer.selectedOptionIds);
-        const correct = new Set(correctOptionIds);
-        isCorrect =
-          selected.size === correct.size && [...selected].every((id) => correct.has(id));
-      } else if (q.type === "FILL_BLANK" || q.type === "DICTATION") {
-        isCorrect =
-          (userAnswer.textAnswer?.trim().toLowerCase() ?? "") ===
-          correctAnswer.trim().toLowerCase();
-      }
-    }
+    const gradable: GradableAnswer | undefined = userAnswer
+      ? { selectedOptionIds: userAnswer.selectedOptionIds, textAnswer: userAnswer.textAnswer }
+      : undefined;
+
+    const isCorrect = scoreQuestion(
+      { type: q.type, correctOptionIds, correctAnswer },
+      gradable
+    );
 
     return {
       questionId: q.id,
@@ -71,31 +93,43 @@ export async function gradeAndPersist(
 
   const correctCount = perQuestion.filter((r) => r.isCorrect).length;
   const total = questions.length;
-  const percentage = total > 0 ? Math.round((correctCount / total) * 100) : 0;
-  const passed = percentage >= 70;
+  const percentage = computePercentage(correctCount, total);
+  const passed = isPassing(percentage);
 
-  await attemptRepo.createAttempt({
-    userId: userId ?? null,
-    lessonId,
+  // 4. Persist only for logged-in users. Anonymous users get their score back
+  //    but no attempt/progress is written.
+  let saved = false;
+  if (user) {
+    await attemptRepo.createAttempt({
+      userId: user.id,
+      lessonId,
+      score: correctCount,
+      totalQuestions: total,
+      correctCount,
+      percentage,
+      status: passed ? AttemptStatus.PASSED : AttemptStatus.FAILED,
+      answers: perQuestion.map((r) => {
+        const userAnswer = answers.find((a) => a.questionId === r.questionId);
+        return {
+          questionId: r.questionId,
+          selectedOptionIds: userAnswer?.selectedOptionIds ?? [],
+          textAnswer: userAnswer?.textAnswer,
+          isCorrect: r.isCorrect,
+        };
+      }),
+    });
+
+    await progressService.updateProgress(user.id, lessonId, percentage);
+    saved = true;
+  }
+
+  return {
     score: correctCount,
     totalQuestions: total,
     correctCount,
     percentage,
-    status: passed ? AttemptStatus.PASSED : AttemptStatus.FAILED,
-    answers: perQuestion.map((r) => {
-      const userAnswer = answers.find((a) => a.questionId === r.questionId);
-      return {
-        questionId: r.questionId,
-        selectedOptionIds: userAnswer?.selectedOptionIds ?? [],
-        textAnswer: userAnswer?.textAnswer,
-        isCorrect: r.isCorrect,
-      };
-    }),
-  });
-
-  if (userId) {
-    await progressService.updateProgress(userId, lessonId, percentage);
-  }
-
-  return { score: correctCount, totalQuestions: total, correctCount, percentage, passed, perQuestion };
+    passed,
+    saved,
+    perQuestion,
+  };
 }

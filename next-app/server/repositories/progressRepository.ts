@@ -38,12 +38,14 @@ export async function upsertProgress(data: {
         lessonId: data.lessonId,
         status,
         bestPercentage: data.percentage,
+        lastPercentage: data.percentage,
         completedAt: data.passed ? new Date() : null,
       },
     });
   }
 
   const best = Math.max(existing.bestPercentage, data.percentage);
+  // Once COMPLETED, stay COMPLETED even if a later attempt scores lower.
   const newStatus: ProgressStatus =
     best >= 70 ? ProgressStatus.COMPLETED : ProgressStatus.IN_PROGRESS;
 
@@ -52,6 +54,7 @@ export async function upsertProgress(data: {
     data: {
       status: newStatus,
       bestPercentage: best,
+      lastPercentage: data.percentage,
       completedAt:
         newStatus === ProgressStatus.COMPLETED && !existing.completedAt
           ? new Date()

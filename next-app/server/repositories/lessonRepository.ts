@@ -116,6 +116,13 @@ export async function archiveLesson(id: string) {
   });
 }
 
+export async function getLessonAccessInfo(id: string) {
+  return prisma.lesson.findUnique({
+    where: { id },
+    select: { id: true, status: true, isPremium: true },
+  });
+}
+
 export async function countLessons() {
   return prisma.lesson.count();
 }

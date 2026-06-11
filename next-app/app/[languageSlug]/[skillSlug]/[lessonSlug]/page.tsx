@@ -11,6 +11,7 @@ import { VocabCards } from "@/components/lesson/VocabCards";
 import { getLessonDetailForPublic } from "@/server/services/lessonService";
 import { VOCAB_PRACTICE_WORDS } from "@/data/mock/vocabulary";
 import { getCurrentUser } from "@/lib/auth";
+import { canAccessLesson } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,7 @@ export default async function LessonDetailPage({ params }: Props) {
   ]);
   if (!lesson) notFound();
 
-  const canAccessPremium = lesson.free || user?.role === "ADMIN" || user?.isPremium === true;
+  const canAccessPremium = canAccessLesson(user, { isPremium: !lesson.free });
 
   const isListening = lesson.skill === "Listening";
   const isDictation = lesson.skill === "Dictation";
@@ -280,6 +281,45 @@ export default async function LessonDetailPage({ params }: Props) {
                 </div>
               </dl>
             </Card>
+
+            {/* Worksheet / PDF download placeholder */}
+            {canAccessPremium && (
+              <Card className="p-5">
+                <h3 className="text-sm font-semibold text-n-800 mb-3">Worksheet</h3>
+                {lesson.pdfUrl ? (
+                  <a
+                    href={lesson.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 text-sm font-medium bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-btn transition-colors"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Download PDF
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    title="PDF worksheet is not available yet"
+                    className="w-full flex items-center justify-center gap-2 text-sm font-medium bg-n-100 text-n-400 px-4 py-2.5 rounded-btn cursor-not-allowed"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    PDF coming soon
+                  </button>
+                )}
+                <p className="text-xs text-n-400 mt-2">
+                  Printable worksheets are generated in a later phase.
+                </p>
+              </Card>
+            )}
 
             {/* Back link */}
             <Link

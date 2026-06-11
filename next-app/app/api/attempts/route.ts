@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { quizSubmissionSchema } from "@/lib/validators";
-import { gradeAndPersist } from "@/server/services/quizService";
+import { gradeAndPersist, QuizError } from "@/server/services/quizService";
 import { getCurrentUser } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
@@ -18,11 +18,15 @@ export async function POST(req: NextRequest) {
     const result = await gradeAndPersist(
       parsed.data.lessonId,
       parsed.data.answers,
-      user?.id ?? null
+      user
     );
 
     return NextResponse.json(result);
   } catch (err) {
+    if (err instanceof QuizError) {
+      const status = err.code === "NOT_FOUND" ? 404 : 403;
+      return NextResponse.json({ error: err.message }, { status });
+    }
     console.error("[/api/attempts] error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
