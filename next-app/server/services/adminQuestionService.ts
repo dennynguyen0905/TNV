@@ -1,4 +1,6 @@
 import type { QuestionType } from "@prisma/client";
+import * as questionRepo from "@/server/repositories/questionRepository";
+import { toAdminQuestion, type AdminQuestion } from "@/server/mappers/questionMapper";
 
 export type ValidatableQuestion = {
   type: QuestionType;
@@ -69,4 +71,26 @@ const CONTENT_REQUIRED_SKILLS = new Set(["Reading", "Grammar"]);
 
 export function requiresContent(skillName: string): boolean {
   return CONTENT_REQUIRED_SKILLS.has(skillName);
+}
+
+export async function getAllQuestionsForAdmin(): Promise<AdminQuestion[]> {
+  const questions = await questionRepo.getAllQuestionsForAdmin();
+  return questions.map(toAdminQuestion);
+}
+
+/**
+ * Delete a single question. Returns the deleted question's lesson + prompt so
+ * the caller can record a meaningful audit entry. Throws if it does not exist.
+ */
+export async function deleteQuestion(
+  id: string
+): Promise<{ lessonId: string; lessonTitle: string; prompt: string }> {
+  const question = await questionRepo.getQuestionById(id);
+  if (!question) throw new Error("Question not found");
+  await questionRepo.deleteQuestionById(id);
+  return {
+    lessonId: question.lesson.id,
+    lessonTitle: question.lesson.title,
+    prompt: question.prompt,
+  };
 }

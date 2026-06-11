@@ -24,6 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `Learn ${lang.name}`,
     description: `${lang.description ?? lang.name} — choose a skill to start learning ${lang.name}.`,
+    alternates: { canonical: `/${lang.slug}` },
   };
 }
 

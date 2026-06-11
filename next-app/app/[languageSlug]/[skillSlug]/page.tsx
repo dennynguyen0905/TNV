@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { getLanguageBySlug } from "@/server/repositories/languageRepository";
 import { getSkillBySlug } from "@/server/repositories/skillRepository";
 import { getPublicLessonsForSkill } from "@/server/services/lessonService";
@@ -26,6 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${lang.name} ${skill.name} Lessons`,
     description: `Browse ${lang.name} ${skill.name} lessons from A1 to C2.`,
+    alternates: { canonical: `/${lang.slug}/${skill.slug}` },
   };
 }
 
@@ -66,8 +68,20 @@ export default async function SkillLessonListPage({ params }: Props) {
         <section className="py-10">
           <div className="max-w-container mx-auto px-6">
             {lessons.length === 0 ? (
-              <Card className="p-8 text-center text-n-400">
-                <p>No published lessons yet for {lang.name} {skill.name}.</p>
+              <Card>
+                <EmptyState
+                  icon="book"
+                  title={`No ${lang.name} ${skill.name} lessons yet`}
+                  description="New lessons are published regularly. Check back soon or explore another skill."
+                  action={
+                    <Link
+                      href={`/${lang.slug}`}
+                      className="text-sm font-medium text-blue-500 hover:text-blue-700"
+                    >
+                      ← Back to {lang.name} skills
+                    </Link>
+                  }
+                />
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

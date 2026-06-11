@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { Alert } from "@/components/ui/Alert";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { AdminJob } from "@/server/mappers/workerJobMapper";
 import { triggerJobAction, retryJobAction, cancelJobAction } from "./actions";
 
@@ -78,13 +80,13 @@ export function JobsClient({ initialJobs }: JobsClientProps) {
       </div>
 
       {notice && (
-        <div className="mb-4 px-4 py-3 rounded-card bg-green-50 border border-green-200 text-green-800 text-sm">
-          {notice}
+        <div className="mb-4">
+          <Alert variant="success">{notice}</Alert>
         </div>
       )}
       {error && (
-        <div className="mb-4 px-4 py-3 rounded-card bg-red-50 border border-red-200 text-red-700 text-sm">
-          {error}
+        <div className="mb-4">
+          <Alert variant="error">{error}</Alert>
         </div>
       )}
 
@@ -110,10 +112,19 @@ export function JobsClient({ initialJobs }: JobsClientProps) {
       </div>
 
       <div className="bg-white rounded-card shadow-card overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="py-16 text-center text-n-400">
-            <p className="text-sm">No jobs match your filters.</p>
-          </div>
+        {jobs.length === 0 ? (
+          <EmptyState
+            icon="briefcase"
+            title="No worker jobs yet"
+            description="Publishing a lesson queues placeholder jobs (index, revalidate, PDF). You can also trigger one manually."
+            action={<Button size="sm" onClick={() => setTriggerOpen(true)}>+ Trigger Job</Button>}
+          />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon="briefcase"
+            title="No jobs match your filters"
+            description="Try a different status or type filter."
+          />
         ) : (
           <table className="w-full text-sm">
             <thead className="border-b border-n-200 bg-n-50">

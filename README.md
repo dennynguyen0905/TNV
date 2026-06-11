@@ -8,16 +8,16 @@
 
 ## Current Status
 
-- **Stage:** Phase 4 complete — Next.js mock UI with interactive admin forms, quiz runner, and special lesson types.
-- **Framework (production target):** Next.js 15.3.4 + React 19 + TypeScript + Tailwind CSS (see `next-app/`)
-- **Framework (static prototype):** Plain HTML + React 18 (CDN) + Babel Standalone — untouched
-- **Deployment:** Vercel (static HTML file — Next.js deploy pending Prisma setup)
-- **Auth:** Mock only — no real backend yet
-- **Data:** Typed mock data in `next-app/data/`; no database connected
-- **Admin (Next.js):** Full mock CRUD — LessonForm with embedded Q&A editor, interactive tables with search/filter/delete/toggle
-- **Learner (Next.js):** Interactive QuizRunner (all 4 question types), Listening/Dictation/Vocabulary lesson UI
-- **Routing:** Next.js App Router, all routes pass `npm run build`
-- **Migration:** See `docs/MIGRATION_MAP.md` and `docs/NEXT_MIGRATION_LOG.md`
+- **Stage:** Phase 5G complete — production-ready Next.js app on Prisma 7 + PostgreSQL with auth, RBAC, admin CMS, learner flow, audit logging, and SEO. (The static `LangPath.html` prototype remains for reference.)
+- **Framework:** Next.js 15.3.4 + React 19 + TypeScript + Tailwind CSS (see `next-app/`)
+- **Database:** PostgreSQL via Prisma 7 (`@prisma/adapter-pg`); schema synced with `prisma db push` (no migrations dir); idempotent seed.
+- **Auth:** HTTP-only cookie sessions, SHA-256 token hashes, server-side RBAC (`requireUser` / `requireAdmin`).
+- **Admin CMS:** Prisma-backed Lessons (authoring + publish gate + preview), Questions (delete), Languages, Skills, Levels, Users, Media (metadata), Worker Jobs (placeholder), and a read-only **Audit Log**.
+- **Learner:** Real quiz grading + persisted Attempts/Progress for logged-in users (anonymous attempts are scored but not saved), dashboard, premium gate.
+- **SEO:** `sitemap.xml` (published content only), `robots.txt` (admin/api blocked), canonical URLs, JSON-LD on lesson pages.
+- **Tests:** Zero-dep `tests/` suite via `tsx` — `npm test` (unit + DB-gated integration).
+- **Payment:** Intentionally disabled (`PAYMENT_ENABLED = false`) — premium is a placeholder gate only.
+- **Changelog:** See `docs/CHANGELOG.md`, `next-app/docs/DATABASE_SETUP.md`, and `docs/NEXT_MIGRATION_LOG.md`.
 
 ## Main Features (Current Prototype)
 
@@ -136,21 +136,54 @@ npx serve .
 # open http://localhost:3000/LangPath.html
 ```
 
-### Next.js app (Phase 3 scaffold)
+### Next.js app (production stack — Prisma + PostgreSQL)
 
 ```bash
 cd next-app
-npm install
-npm run dev
-# open http://localhost:3000
+docker compose up -d          # local PostgreSQL (langpath-postgres on :5432)
+cp .env.example .env
+npm install                   # postinstall runs `prisma generate`
+
+# The Prisma CLI does NOT auto-load .env — export DATABASE_URL first.
+# PowerShell:  $env:DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/language_learning_platform?schema=public"
+# bash:        export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/language_learning_platform?schema=public"
+npx prisma db push            # sync schema (no migrations directory)
+npx tsx prisma/seed.ts        # idempotent seed (or: npm run prisma:seed)
+
+npm run dev                   # http://localhost:3000
 ```
 
-### Next.js build check
+See `next-app/docs/DATABASE_SETUP.md` for full setup, the Prisma 7 `DATABASE_URL`
+CLI note, and per-phase database details.
+
+### Seed test accounts
+
+| Email | Password | Role | Premium |
+|-------|----------|------|---------|
+| admin@example.com | Password123! | ADMIN | yes |
+| learner@example.com | Password123! | LEARNER | no |
+| premium@example.com | Password123! | LEARNER | yes |
+
+### Admin CMS workflow
+
+1. Log in as `admin@example.com` → the **Admin** area is at `/admin` (server-side RBAC).
+2. **Lessons** → *New Lesson*: fill title/slug/skill/level, add body content (Reading/Grammar
+   require it), and author questions in the embedded quiz editor.
+3. Save as **Draft** or **Review** while incomplete. Drafts/review/archived lessons are
+   hidden from the public site and the sitemap; preview any status at
+   `/admin/lessons/<id>/preview`.
+4. **Publish** runs the publish gate (content-complete + every question valid) and enqueues
+   placeholder worker jobs (index / revalidate / PDF). Publish, unpublish, archive,
+   question deletes, and user role/premium changes are recorded in **Audit Log** (`/admin/audit`).
+
+### Checks & tests
 
 ```bash
 cd next-app
-npm run lint         # 0 warnings, 0 errors
-npm run build        # 19 routes, 0 TS errors, 0 lint errors
+npm run lint          # 0 warnings
+npm run typecheck     # 0 errors
+npm run build         # 0 errors
+npm test              # unit + integration (integration self-skips without a DB)
 ```
 
 ### Test admin lesson form
@@ -194,15 +227,18 @@ NEXT_PUBLIC_SITE_URL=https://thang-nv.vercel.app
 - Business logic must be separate from UI components
 - No payment integration in MVP
 
-## Deferred Features
+## Deferred Features / Explicit Placeholders
 
-- Real payment (Stripe, PayPal, MoMo, VNPay, ZaloPay — all deferred)
-- Third-party auth providers
-- Real audio file storage and streaming
-- Real PDF generation
-- Full-text search (Elasticsearch/Typesense)
-- Email notifications
-- Redis-backed job queue
+These are intentionally **not** implemented; the code keeps explicit placeholders
+rather than half-working integrations:
+
+- **Payment** (Stripe, PayPal, MoMo, VNPay, ZaloPay) — `PAYMENT_ENABLED = false`; premium is a gate only.
+- **Worker queue** — `WorkerJob` rows are created on publish, but no live worker/Redis processes them.
+- **Object storage** (R2/S3) — Media stores URL/path **metadata only**; no file uploads.
+- **PDF generation** — lesson worksheet button is a "coming soon" placeholder.
+- **Audio processing** — listening lessons reference an `audioUrl` only.
+- **Full-text search** (Typesense/Elasticsearch) — search is database-backed `INDEX_SEARCH` placeholder jobs only.
+- **Email notifications** and **third-party auth providers**.
 
 ## Copyright Rules
 

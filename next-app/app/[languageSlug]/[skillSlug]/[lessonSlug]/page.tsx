@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { QuizRunnerDB } from "@/components/quiz/QuizRunnerDB";
 import { DictationPractice } from "@/components/lesson/DictationPractice";
 import { VocabCards } from "@/components/lesson/VocabCards";
+import { LessonJsonLd } from "@/components/seo/LessonJsonLd";
 import { getLessonDetailForPublic } from "@/server/services/lessonService";
 import { VOCAB_PRACTICE_WORDS } from "@/data/mock/vocabulary";
 import { getCurrentUser } from "@/lib/auth";
@@ -26,6 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: lesson.seoTitle ?? lesson.title,
     description: lesson.seoDescription ?? lesson.summary,
+    alternates: { canonical: `/${languageSlug}/${skillSlug}/${lessonSlug}` },
   };
 }
 
@@ -68,6 +70,15 @@ export default async function LessonDetailPage({ params }: Props) {
 
   return (
     <>
+      <LessonJsonLd
+        title={lesson.seoTitle ?? lesson.title}
+        description={lesson.seoDescription ?? lesson.summary}
+        url={`/${languageSlug}/${skillSlug}/${lessonSlug}`}
+        lang={lesson.lang}
+        skill={lesson.skill}
+        level={lesson.level}
+        free={lesson.free}
+      />
       <Header />
       <main className="max-w-container mx-auto px-6 py-10">
         {/* Breadcrumb */}

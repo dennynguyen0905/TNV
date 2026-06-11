@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { requireUser } from "@/lib/auth";
 import * as progressRepo from "@/server/repositories/progressRepository";
 import * as attemptRepo from "@/server/repositories/attemptRepository";
@@ -174,11 +175,17 @@ export default async function DashboardPage() {
               <span className="text-sm text-n-400">{totalAttempts} total</span>
             </div>
             {recentAttempts.length === 0 ? (
-              <Card className="p-6 text-center">
-                <p className="text-n-500 mb-3">No attempts yet. Start a lesson to track progress.</p>
-                <Link href="/" className="text-sm text-blue-500 hover:text-blue-700 font-medium">
-                  Browse lessons →
-                </Link>
+              <Card>
+                <EmptyState
+                  icon="award"
+                  title="No attempts yet"
+                  description="Start a lesson and complete its quiz to track your progress here."
+                  action={
+                    <Link href="/" className="text-sm font-medium text-blue-500 hover:text-blue-700">
+                      Browse lessons →
+                    </Link>
+                  }
+                />
               </Card>
             ) : (
               <div className="space-y-3">

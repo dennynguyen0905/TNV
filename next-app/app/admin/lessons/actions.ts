@@ -7,7 +7,9 @@ import * as adminLessonService from "@/server/services/adminLessonService";
 import * as lessonRepo from "@/server/repositories/lessonRepository";
 import { enqueueLessonPublishJobs } from "@/server/services/adminJobService";
 import { validateQuestions, requiresContent } from "@/server/services/adminQuestionService";
+import { recordAudit, AUDIT_ACTIONS } from "@/server/services/auditService";
 import { getCurrentUser } from "@/lib/auth";
+import type { User } from "@prisma/client";
 
 type ActionResult = { ok: true; lessonId?: string } | { ok: false; error: string };
 
@@ -34,6 +36,13 @@ async function assertAdmin(): Promise<ActionResult | null> {
   const user = await getCurrentUser();
   if (!user || user.role !== "ADMIN") return { ok: false, error: "Unauthorized" };
   return null;
+}
+
+/** Returns the acting admin User, or null when the caller is not an admin. */
+async function getAdminActor(): Promise<User | null> {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "ADMIN") return null;
+  return user;
 }
 
 export async function createLessonAction(formData: {
@@ -109,11 +118,19 @@ export async function updateLessonAction(formData: {
 }
 
 export async function archiveLessonAction(id: string): Promise<ActionResult> {
-  const authErr = await assertAdmin();
-  if (authErr) return authErr;
+  const actor = await getAdminActor();
+  if (!actor) return { ok: false, error: "Unauthorized" };
 
   try {
-    await lessonRepo.archiveLesson(id);
+    const lesson = await lessonRepo.archiveLesson(id);
+    await recordAudit({
+      actor,
+      action: AUDIT_ACTIONS.UPDATE_LESSON_STATUS,
+      entityType: "Lesson",
+      entityId: id,
+      summary: `Archived lesson "${lesson.title}"`,
+      metadata: { status: "ARCHIVED" },
+    });
     revalidatePath("/admin/lessons");
     revalidatePath("/");
     return { ok: true };
@@ -123,8 +140,8 @@ export async function archiveLessonAction(id: string): Promise<ActionResult> {
 }
 
 export async function publishLessonAction(id: string): Promise<ActionResult> {
-  const authErr = await assertAdmin();
-  if (authErr) return authErr;
+  const actor = await getAdminActor();
+  if (!actor) return { ok: false, error: "Unauthorized" };
 
   try {
     const lesson = await lessonRepo.getLessonByIdForAdmin(id);
@@ -154,6 +171,14 @@ export async function publishLessonAction(id: string): Promise<ActionResult> {
       publishedAt: lesson.publishedAt ?? new Date(),
     });
     await enqueueLessonPublishJobs(id, lesson.slug);
+    await recordAudit({
+      actor,
+      action: AUDIT_ACTIONS.PUBLISH_LESSON,
+      entityType: "Lesson",
+      entityId: id,
+      summary: `Published lesson "${lesson.title}"`,
+      metadata: { slug: lesson.slug, skill: lesson.skill.name },
+    });
 
     revalidatePath("/admin/lessons");
     revalidatePath("/");
@@ -164,13 +189,21 @@ export async function publishLessonAction(id: string): Promise<ActionResult> {
 }
 
 export async function unpublishLessonAction(id: string): Promise<ActionResult> {
-  const authErr = await assertAdmin();
-  if (authErr) return authErr;
+  const actor = await getAdminActor();
+  if (!actor) return { ok: false, error: "Unauthorized" };
 
   try {
     const lesson = await lessonRepo.getLessonByIdForAdmin(id);
     if (!lesson) return { ok: false, error: "Lesson not found" };
     await lessonRepo.updateLesson(id, { status: LessonStatus.DRAFT });
+    await recordAudit({
+      actor,
+      action: AUDIT_ACTIONS.UNPUBLISH_LESSON,
+      entityType: "Lesson",
+      entityId: id,
+      summary: `Unpublished lesson "${lesson.title}" (back to draft)`,
+      metadata: { slug: lesson.slug },
+    });
     revalidatePath("/admin/lessons");
     revalidatePath("/");
     return { ok: true };

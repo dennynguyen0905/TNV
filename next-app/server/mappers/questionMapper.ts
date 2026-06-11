@@ -3,6 +3,39 @@ import type { QuestionType } from "@/data/types";
 
 type PrismaQuestionWithOptions = Question & { options: QuestionOption[] };
 
+type PrismaQuestionForAdmin = Question & {
+  options: QuestionOption[];
+  lesson: { id: string; title: string };
+  _count?: { attemptAnswers: number };
+};
+
+// Shape for the admin Questions list (read-only table + delete).
+export type AdminQuestion = {
+  id: string;
+  type: QuestionType;
+  prompt: string;
+  explanation: string;
+  lessonId: string;
+  lessonTitle: string;
+  optionCount: number;
+  answer: string;
+  answerCount: number;
+};
+
+export function toAdminQuestion(q: PrismaQuestionForAdmin): AdminQuestion {
+  return {
+    id: q.id,
+    type: q.type as QuestionType,
+    prompt: q.prompt,
+    explanation: q.explanation ?? "",
+    lessonId: q.lesson.id,
+    lessonTitle: q.lesson.title,
+    optionCount: q.options.length,
+    answer: q.answerText ?? "",
+    answerCount: q._count?.attemptAnswers ?? 0,
+  };
+}
+
 // Safe shape for client — no answer keys exposed before submission
 export interface PublicQuestion {
   id: string;

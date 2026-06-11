@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { FlagIcon } from "@/components/layout/FlagIcon";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { getAllActiveLanguages } from "@/server/repositories/languageRepository";
 import { getFeaturedFreePublicLessons } from "@/server/services/lessonService";
 
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
   title: "LangPath — Language Learning Platform",
   description:
     "Learn English, German, French and Spanish with reading, listening, dictation, grammar and vocabulary lessons.",
+  alternates: { canonical: "/" },
 };
 
 export default async function HomePage() {
@@ -80,9 +82,21 @@ export default async function HomePage() {
             <h2 className="text-2xl font-bold text-n-900 mb-2">Featured free lessons</h2>
             <p className="text-n-500 mb-8">Start learning today — no account required.</p>
             {featuredLessons.length === 0 ? (
-              <p className="text-n-400 text-sm italic">
-                No published lessons yet. Run the seed to add sample data.
-              </p>
+              <Card>
+                <EmptyState
+                  icon="book"
+                  title="No published lessons yet"
+                  description="Lessons are on the way. Browse languages above, or run the seed to add sample content in development."
+                  action={
+                    <Link
+                      href="/english"
+                      className="text-sm font-medium text-blue-500 hover:text-blue-700"
+                    >
+                      Browse languages →
+                    </Link>
+                  }
+                />
+              </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 {featuredLessons.map((lesson) => (

@@ -15,6 +15,7 @@ const navItems = [
   { label: "Media",      href: "/admin/media",      icon: "image" },
   { label: "Users",      href: "/admin/users",      icon: "users" },
   { label: "Jobs",       href: "/admin/jobs",       icon: "briefcase" },
+  { label: "Audit Log",  href: "/admin/audit",      icon: "file-text" },
 ];
 
 export function AdminSidebar() {

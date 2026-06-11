@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Icon } from "@/components/ui/Icon";
+import { Alert } from "@/components/ui/Alert";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { AdminUser } from "@/server/mappers/userMapper";
 import {
   updateUserRoleAction,
@@ -118,8 +120,8 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-input border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
-          {error}
+        <div className="mb-4">
+          <Alert variant="error">{error}</Alert>
         </div>
       )}
 
@@ -146,11 +148,18 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
       </div>
 
       <div className="bg-white rounded-card shadow-card overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="py-16 text-center text-n-400">
-            <Icon name="users" size={32} className="mx-auto mb-3 opacity-40" />
-            <p className="text-sm">No users match your filters.</p>
-          </div>
+        {users.length === 0 ? (
+          <EmptyState
+            icon="users"
+            title="No users yet"
+            description="Accounts created via registration or the seed will appear here."
+          />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon="users"
+            title="No users match your filters"
+            description="Try a different search term or role filter."
+          />
         ) : (
           <table className="w-full text-sm">
             <thead className="border-b border-n-200 bg-n-50">

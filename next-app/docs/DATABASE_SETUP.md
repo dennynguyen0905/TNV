@@ -299,3 +299,86 @@ npm run prisma:seed   # idempotent — safe to re-run
 - Media upload to cloud storage, real PDF generation, real audio processing.
 - Search indexing (Typesense), background queues (Redis).
 - The `/admin/questions`, `/admin/media`, and `/admin/jobs` pages remain placeholders.
+
+---
+
+## ⚠️ Prisma 7 + `db push` (IMPORTANT — read before running CLI commands)
+
+This project is on **Prisma 7** and uses **`prisma db push`** for schema changes —
+there is **no `prisma/migrations/` directory**. The Phase 5C/5D notes above that
+mention `prisma migrate dev` are historical; in practice run:
+
+```bash
+npx prisma db push      # sync schema.prisma → database (dev)
+npx prisma generate     # regenerate the client
+npx tsx prisma/seed.ts  # idempotent seed (or: npm run prisma:seed)
+```
+
+**The Prisma CLI does NOT auto-load `.env`.** With `prisma.config.ts` present,
+Prisma 7 reads `datasource.url` from `process.env.DATABASE_URL`, but the CLI does
+**not** load `.env` for you. You must export it first:
+
+```powershell
+# PowerShell (Windows)
+$env:DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/language_learning_platform?schema=public"
+npx prisma db push
+npx tsx prisma/seed.ts
+```
+
+```bash
+# bash / zsh
+export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/language_learning_platform?schema=public"
+npx prisma db push
+npx tsx prisma/seed.ts
+```
+
+`next dev` / `next build` **do** load `.env` automatically — this only affects the
+Prisma CLI and standalone `tsx` scripts (seed, tests). The test runner loads
+`.env` itself via `tests/loadEnv.ts`, so `npm test` does not require the export.
+
+Other Prisma 7 specifics already in place:
+- `schema.prisma` `datasource` block has **no `url`** — it lives in `prisma.config.ts`.
+- `PrismaClient` is constructed with `{ adapter: new PrismaPg(DATABASE_URL) }`
+  (`@prisma/adapter-pg` + `pg` are runtime deps). The seed uses the same adapter.
+
+---
+
+## Phase 5E / 5F / 5G Changes (current)
+
+### Phase 5E — learner flow hardening
+- Added `Progress.lastPercentage` (latest attempt score; `bestPercentage` keeps best).
+- Anonymous quiz submissions are **scored but not persisted** (no Attempt/Progress);
+  only logged-in users persist. `gradeAndPersist` also enforces PUBLISHED + premium access.
+
+### Phase 5F — admin CMS hardening
+- `AttemptAnswer.question` relation set to `onDelete: Cascade` so answered questions
+  can be deleted/replaced.
+- Publish gate (`adminQuestionService.validateQuestions` + `requiresContent`), admin
+  preview route, Prisma-backed worker jobs + media, lesson filters, question counts.
+
+### Phase 5G — production polish (this phase)
+
+**Schema change:** added the `AuditLog` model (append-only admin trail).
+
+```bash
+$env:DATABASE_URL = "...";  npx prisma db push;  npx prisma generate
+```
+
+| Area | What changed |
+|------|--------------|
+| **Audit logging** | New `AuditLog` table + `auditService.recordAudit`. Records `PUBLISH_LESSON`, `UNPUBLISH_LESSON`, `UPDATE_LESSON_STATUS` (archive), `DELETE_QUESTION`, `UPDATE_USER_ROLE`, `UPDATE_USER_PREMIUM`. Best-effort (never breaks the underlying action). Read-only viewer at `/admin/audit`. |
+| **Admin Questions** | `/admin/questions` converted from mock → Prisma-backed list with a real `deleteQuestionAction` (RBAC + Zod + audit). |
+| **Empty / error states** | Shared `components/ui/EmptyState.tsx` + `Alert.tsx` applied to admin lessons/jobs/media/users/questions, the learner dashboard, and public lesson lists (distinguishing "no data" from "no filter match"). |
+| **SEO** | `app/sitemap.ts` (published content only), `app/robots.ts` (blocks `/admin`, `/api`, `/dashboard`, `/login`, `/register`), canonical metadata on all public routes, JSON-LD `LearningResource` on lesson pages. `SITE_URL` from `NEXT_PUBLIC_SITE_URL`/`NEXT_PUBLIC_APP_URL`. |
+| **Tests** | Zero-dependency `tests/` suite run with `tsx`. `npm run test:unit` (publish gate, invalid quiz, premium access — no DB), `npm run test:integration` (anon-not-saved, learner-saved, admin-only preview, job idempotency — DB-gated, self-skips with no DB), `npm test` (both). |
+
+### Verification commands (Phase 5G)
+
+```bash
+npm run lint           # 0 warnings
+npm run typecheck      # 0 errors
+npm run build          # 0 errors
+npm test               # unit + integration (integration self-skips without a DB)
+$env:DATABASE_URL="..."; npx prisma db push; npx prisma generate
+$env:DATABASE_URL="..."; npx tsx prisma/seed.ts   # idempotent
+```

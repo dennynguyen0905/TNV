@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Icon } from "@/components/ui/Icon";
+import { Alert } from "@/components/ui/Alert";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { MediaForm, type MediaFormValues } from "@/components/admin/MediaForm";
 import type { AdminMedia } from "@/server/mappers/mediaMapper";
 import { createMediaAction, updateMediaAction, deleteMediaAction } from "./actions";
@@ -106,8 +108,8 @@ export function MediaClient({ initialMedia, lessons }: MediaClientProps) {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-input border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
-          {error}
+        <div className="mb-4">
+          <Alert variant="error">{error}</Alert>
         </div>
       )}
 
@@ -131,11 +133,24 @@ export function MediaClient({ initialMedia, lessons }: MediaClientProps) {
       </div>
 
       <div className="bg-white rounded-card shadow-card overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="py-16 text-center text-n-400">
-            <Icon name="image" size={32} className="mx-auto mb-3 opacity-40" />
-            <p className="text-sm">No media assets yet.</p>
-          </div>
+        {media.length === 0 ? (
+          <EmptyState
+            icon="image"
+            title="No media assets yet"
+            description="Add an audio, image, or PDF metadata record. Files are not stored — this tracks URLs/paths only."
+            action={
+              <Button size="sm" onClick={openNew}>
+                <Icon name="plus" size={14} />
+                New Media
+              </Button>
+            }
+          />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon="image"
+            title="No media match your filters"
+            description="Try a different search term or type filter."
+          />
         ) : (
           <table className="w-full text-sm">
             <thead className="border-b border-n-200 bg-n-50">

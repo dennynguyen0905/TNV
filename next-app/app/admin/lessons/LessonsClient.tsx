@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
+import { Alert } from "@/components/ui/Alert";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { LESSON_STATUS_COLORS } from "@/data/constants/lesson-statuses";
 import {
   archiveLessonAction,
@@ -130,8 +132,8 @@ export function LessonsClient({ initialLessons }: LessonsClientProps) {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-input border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
-          {error}
+        <div className="mb-4">
+          <Alert variant="error">{error}</Alert>
         </div>
       )}
 
@@ -164,11 +166,26 @@ export function LessonsClient({ initialLessons }: LessonsClientProps) {
       </div>
 
       <div className="bg-white rounded-card shadow-card overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="py-16 text-center text-n-400">
-            <Icon name="book" size={32} className="mx-auto mb-3 opacity-40" />
-            <p className="text-sm">No lessons match your filters.</p>
-          </div>
+        {lessons.length === 0 ? (
+          <EmptyState
+            icon="book"
+            title="No lessons yet"
+            description="Create your first lesson to start building the catalog."
+            action={
+              <Link href="/admin/lessons/new">
+                <Button size="sm">
+                  <Icon name="plus" size={14} />
+                  New Lesson
+                </Button>
+              </Link>
+            }
+          />
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            icon="book"
+            title="No lessons match your filters"
+            description="Try a different search term, skill, level, status, or access filter."
+          />
         ) : (
           <table className="w-full text-sm">
             <thead className="border-b border-n-200 bg-n-50">

@@ -9,6 +9,7 @@ import {
   userProfileUpdateSchema,
 } from "@/lib/validators";
 import * as adminUserService from "@/server/services/adminUserService";
+import { recordAudit, AUDIT_ACTIONS } from "@/server/services/auditService";
 import type { User } from "@prisma/client";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
@@ -33,7 +34,15 @@ export async function updateUserRoleAction(input: {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Validation failed" };
   }
   try {
-    await adminUserService.setUserRole(parsed.data.id, parsed.data.role, auth.user.id);
+    const updated = await adminUserService.setUserRole(parsed.data.id, parsed.data.role, auth.user.id);
+    await recordAudit({
+      actor: auth.user,
+      action: AUDIT_ACTIONS.UPDATE_USER_ROLE,
+      entityType: "User",
+      entityId: parsed.data.id,
+      summary: `Set ${updated.email} role to ${parsed.data.role}`,
+      metadata: { role: parsed.data.role },
+    });
     revalidatePath("/admin/users");
     revalidatePath("/admin");
     return { ok: true };
@@ -54,7 +63,15 @@ export async function toggleUserPremiumAction(input: {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Validation failed" };
   }
   try {
-    await adminUserService.setUserPremium(parsed.data.id, parsed.data.isPremium);
+    const updated = await adminUserService.setUserPremium(parsed.data.id, parsed.data.isPremium);
+    await recordAudit({
+      actor: auth.user,
+      action: AUDIT_ACTIONS.UPDATE_USER_PREMIUM,
+      entityType: "User",
+      entityId: parsed.data.id,
+      summary: `${parsed.data.isPremium ? "Granted" : "Revoked"} premium for ${updated.email}`,
+      metadata: { isPremium: parsed.data.isPremium },
+    });
     revalidatePath("/admin/users");
     revalidatePath("/admin");
     return { ok: true };
