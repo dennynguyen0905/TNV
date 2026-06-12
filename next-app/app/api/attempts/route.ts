@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { quizSubmissionSchema } from "@/lib/validators";
 import { gradeAndPersist, QuizError } from "@/server/services/quizService";
 import { getCurrentUser } from "@/lib/auth";
+import { createLogger, describeError } from "@/lib/logger";
+
+const log = createLogger("api/attempts");
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,7 +30,7 @@ export async function POST(req: NextRequest) {
       const status = err.code === "NOT_FOUND" ? 404 : 403;
       return NextResponse.json({ error: err.message }, { status });
     }
-    console.error("[/api/attempts] error:", err);
+    log.error("unhandled error", describeError(err));
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

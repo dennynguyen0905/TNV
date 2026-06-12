@@ -11,6 +11,8 @@ import "./loadEnv";
 import { test, assert, assertEqual, runRegistered } from "./harness";
 import { validateQuestions, requiresContent } from "../server/services/adminQuestionService";
 import { canAccessLesson } from "../lib/permissions";
+import { rateLimit, __resetRateLimitStore } from "../lib/rateLimit";
+import { checkEnv } from "../lib/env";
 import type { QuestionType } from "@prisma/client";
 
 function opt(text: string, isCorrect: boolean, sortOrder: number) {
@@ -133,6 +135,69 @@ test("premium access: premium learner can access a premium lesson", () => {
 
 test("premium access: admin can access a premium lesson regardless of flag", () => {
   assertEqual(canAccessLesson({ role: "ADMIN", isPremium: false }, { isPremium: true }), true);
+});
+
+// ─── Rate limiter (Phase 5H) ─────────────────────────────────────────────────
+
+test("rate limit: allows requests up to the limit then blocks", () => {
+  __resetRateLimitStore();
+  const opts = { limit: 3, windowMs: 60_000 };
+  assertEqual(rateLimit("k", opts).allowed, true, "1st allowed");
+  assertEqual(rateLimit("k", opts).allowed, true, "2nd allowed");
+  assertEqual(rateLimit("k", opts).allowed, true, "3rd allowed");
+  const fourth = rateLimit("k", opts);
+  assertEqual(fourth.allowed, false, "4th blocked");
+  assert(fourth.retryAfterSeconds > 0, "blocked result reports retryAfter");
+});
+
+test("rate limit: separate keys have independent windows", () => {
+  __resetRateLimitStore();
+  const opts = { limit: 1, windowMs: 60_000 };
+  assertEqual(rateLimit("a", opts).allowed, true, "key a first");
+  assertEqual(rateLimit("a", opts).allowed, false, "key a blocked");
+  assertEqual(rateLimit("b", opts).allowed, true, "key b independent");
+});
+
+test("rate limit: window resets after it expires", () => {
+  __resetRateLimitStore();
+  const opts = { limit: 1, windowMs: 1 };
+  assertEqual(rateLimit("k", opts).allowed, true, "first allowed");
+  const past = Date.now() + 5;
+  const realNow = Date.now;
+  Date.now = () => past; // fast-forward past the 1ms window
+  try {
+    assertEqual(rateLimit("k", opts).allowed, true, "allowed after reset");
+  } finally {
+    Date.now = realNow;
+  }
+});
+
+// ─── Env validation (Phase 5H) ───────────────────────────────────────────────
+
+test("env check: flags a missing DATABASE_URL as an error", () => {
+  const original = process.env.DATABASE_URL;
+  delete process.env.DATABASE_URL;
+  try {
+    const { ok, issues } = checkEnv();
+    assertEqual(ok, false, "expected not ok without DATABASE_URL");
+    assert(
+      issues.some((i) => i.variable === "DATABASE_URL" && i.severity === "error"),
+      "expected a DATABASE_URL error issue"
+    );
+  } finally {
+    if (original !== undefined) process.env.DATABASE_URL = original;
+  }
+});
+
+test("env check: passes with a valid postgres DATABASE_URL", () => {
+  const original = process.env.DATABASE_URL;
+  process.env.DATABASE_URL = "postgresql://u:p@localhost:5432/db";
+  try {
+    assertEqual(checkEnv().ok, true, "expected ok with valid DATABASE_URL");
+  } finally {
+    if (original !== undefined) process.env.DATABASE_URL = original;
+    else delete process.env.DATABASE_URL;
+  }
 });
 
 if (process.argv[1] && process.argv[1].includes("unit")) {

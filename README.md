@@ -8,7 +8,7 @@
 
 ## Current Status
 
-- **Stage:** Phase 5G complete — production-ready Next.js app on Prisma 7 + PostgreSQL with auth, RBAC, admin CMS, learner flow, audit logging, and SEO. (The static `LangPath.html` prototype remains for reference.)
+- **Stage:** Phase 5H complete — deployment & runtime hardening on top of the production-ready Next.js app (Prisma 7 + PostgreSQL, auth, RBAC, admin CMS, learner flow, audit logging, SEO). Adds healthcheck/version endpoints, server logging, env validation, auth rate limiting, and deployment docs. (The static `LangPath.html` prototype remains for reference.)
 - **Framework:** Next.js 15.3.4 + React 19 + TypeScript + Tailwind CSS (see `next-app/`)
 - **Database:** PostgreSQL via Prisma 7 (`@prisma/adapter-pg`); schema synced with `prisma db push` (no migrations dir); idempotent seed.
 - **Auth:** HTTP-only cookie sessions, SHA-256 token hashes, server-side RBAC (`requireUser` / `requireAdmin`).
@@ -16,6 +16,7 @@
 - **Learner:** Real quiz grading + persisted Attempts/Progress for logged-in users (anonymous attempts are scored but not saved), dashboard, premium gate.
 - **SEO:** `sitemap.xml` (published content only), `robots.txt` (admin/api blocked), canonical URLs, JSON-LD on lesson pages.
 - **Tests:** Zero-dep `tests/` suite via `tsx` — `npm test` (unit + DB-gated integration).
+- **Ops:** Healthcheck `GET /api/health` (DB readiness, `200`/`503`), build info `GET /api/version`, scoped server logging (`lib/logger.ts`), env validation (`lib/env.ts`), and zero-dep auth rate limiting (`lib/rateLimit.ts`).
 - **Payment:** Intentionally disabled (`PAYMENT_ENABLED = false`) — premium is a placeholder gate only.
 - **Changelog:** See `docs/CHANGELOG.md`, `next-app/docs/DATABASE_SETUP.md`, and `docs/NEXT_MIGRATION_LOG.md`.
 
@@ -250,8 +251,11 @@ rather than half-working integrations:
 
 ## Deployment
 
-- Currently deployed to Vercel as a static site
-- Entry point: `LangPath.html`
-- No build step required for the current prototype
-- After Next.js migration, Vercel will auto-detect Next.js and build correctly
-- See `docs/DEPLOYMENT_NOTES.md` for full deployment notes
+- **Production Next.js app:** see **`docs/DEPLOYMENT.md`** — the authoritative
+  guide for local production build, PostgreSQL, the Prisma generate/push/seed
+  flow, Vercel, Docker/VPS, rollback, and backup/restore.
+- **Release gates & smoke tests:** see **`docs/RELEASE_CHECKLIST.md`**.
+- **Operational endpoints:** `GET /api/health` (liveness + DB readiness),
+  `GET /api/version` (build info).
+- The historical static prototype (`LangPath.html`) and migration background
+  live in `docs/DEPLOYMENT_NOTES.md`.
