@@ -1,0 +1,53 @@
+name: Docker Build (optional)
+
+# Phase 5I — OPTIONAL image build verification. Kept in a SEPARATE workflow so it
+# is NOT a required PR gate: the production Dockerfile is verifiable without any
+# secrets (it makes no DB queries at build time), but image builds are slower and
+# can be flaky on shared runners, so the fast `ci.yml` job stays the merge gate.
+#
+# Triggers:
+#   - manual (workflow_dispatch) — run on demand
+#   - pull_request, but ONLY when Docker-relevant files change
+#
+# It builds the image to confirm the multi-stage standalone build still works.
+# It never pushes, never logs in to a registry, and uses no secrets.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "next-app/Dockerfile"
+      - "next-app/.dockerignore"
+      - "next-app/package.json"
+      - "next-app/package-lock.json"
+      - "next-app/next.config.ts"
+      - ".github/workflows/docker-build.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker:
+    name: Build image (no push)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (no push, no secrets)
+        uses: docker/build-push-action@v6
+        with:
+          context: next-app
+          file: next-app/Dockerfile
+          push: false
+          load: false
+          tags: langpath:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

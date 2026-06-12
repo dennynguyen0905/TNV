@@ -1,0 +1,63 @@
+name: CI
+
+# Phase 5I — CI/CD & staging release readiness.
+# Runs the same gates as docs/RELEASE_CHECKLIST.md on every PR and on pushes to
+# main. No secrets, no real database, and no production data are touched here:
+# the app build is fully dynamic (no DB queries at build time) and the
+# integration test suite self-skips when the database is unreachable.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: next-app
+
+jobs:
+  verify:
+    name: Lint · Typecheck · Build · Test
+    runs-on: ubuntu-latest
+    env:
+      # Unreachable dummy connection string. Prisma's client GENERATES from the
+      # schema alone (no DB needed), the Next build makes no DB queries, and the
+      # integration suite probes `SELECT 1` and self-skips when it cannot
+      # connect. So CI exercises lint/typecheck/build + unit tests with zero
+      # infrastructure and zero secrets.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/langpath_ci?schema=public
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: next-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Test (unit always; integration self-skips without a DB)
+        run: npm test

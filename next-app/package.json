@@ -16,7 +16,8 @@
     "db:reset": "prisma migrate reset",
     "test": "tsx tests/run.ts",
     "test:unit": "tsx tests/unit.ts",
-    "test:integration": "tsx tests/integration.ts"
+    "test:integration": "tsx tests/integration.ts",
+    "smoke": "tsx scripts/smoke.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

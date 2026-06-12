@@ -5,7 +5,51 @@ A high-level log of each delivery phase. For deep implementation notes see
 
 ---
 
-## Phase 5H — Deployment & runtime hardening (current)
+## Phase 5I — CI/CD & staging release readiness (current)
+
+Goal: make releases verifiable and repeatable **without** changing the 5E learner
+flow, the 5F admin CMS publish workflow, or adding any deferred infrastructure
+(real payments, Redis workers, object storage, PDF, audio, Typesense all remain
+explicit placeholders). `PAYMENT_ENABLED` stays `false`.
+
+### Added
+- **GitHub Actions CI** `.github/workflows/ci.yml` — runs on PRs and pushes to
+  `main`. From `next-app/`: `npm ci` → `prisma generate` → lint → typecheck →
+  build → test. No secrets and no real database: a throwaway unreachable
+  `DATABASE_URL` lets Prisma generate and the (fully dynamic) build run, while
+  the integration suite self-skips. CI never seeds or mutates any DB.
+- **Optional Docker build check** `.github/workflows/docker-build.yml` — separate,
+  non-required workflow that builds the production image (no push, no secrets) on
+  manual dispatch or when Docker-relevant files change. Kept off the merge gate
+  so a slow/flaky image build never blocks PRs.
+- **Smoke test** `next-app/scripts/smoke.ts` + `npm run smoke` — zero-dep checks
+  of `/api/health` (must be `200`), `/api/version`, `/robots.txt`, `/sitemap.xml`,
+  and the public home page against `SMOKE_BASE_URL` (default
+  `http://localhost:3000`). Optional admin-login check only when
+  `SMOKE_ADMIN_EMAIL` + `SMOKE_ADMIN_PASSWORD` are provided. No credentials
+  required by default; never mutates data.
+
+### Updated
+- **`/api/version`** — also reads `GITHUB_SHA` / `GIT_COMMIT_SHA` for the commit
+  (in addition to `BUILD_SHA` / `VERCEL_GIT_COMMIT_SHA`). Missing metadata still
+  reports `null`; local dev unaffected.
+- **`docs/DEPLOYMENT.md`** — new sections: CI, a local-vs-staging-vs-production
+  matrix, and a staging setup + verification guide (env vars, separate staging
+  DB, Prisma push/seed, admin test login, learner smoke test).
+- **`docs/RELEASE_CHECKLIST.md`** — CI note on the gates, an automated
+  `npm run smoke` step, a full staging-release flow (merge → deploy staging →
+  smoke → health → SEO → manual login/quiz → approve prod), and app + database
+  rollback notes (incl. `db push` non-reversibility).
+
+### Unchanged (verified)
+- 5E learner flow, 5F publish gate / preview / worker placeholders, quiz scoring,
+  premium access, public lesson visibility, seed data, and all deferred-subsystem
+  placeholders. Gates: lint 0 warnings, typecheck 0 errors, build 0 errors
+  (30 routes), 26 tests pass; `PAYMENT_ENABLED=false`.
+
+---
+
+## Phase 5H — Deployment & runtime hardening
 
 Goal: prepare the app for safe production deployment and operation **without**
 changing the 5E learner flow, the 5F admin CMS publish workflow, or introducing
