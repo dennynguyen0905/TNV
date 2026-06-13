@@ -113,17 +113,17 @@ export function LessonsClient({ initialLessons }: LessonsClientProps) {
   };
 
   return (
-    <div className="max-w-6xl">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-8 max-w-[1200px]">
+      <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-n-900">Lessons</h1>
-          <p className="text-sm text-n-500 mt-1">
-            {filtered.length} of {lessons.length} lessons
+          <h1 className="text-2xl font-extrabold mb-1 text-n-900">Lessons</h1>
+          <p className="text-[14px] text-n-500">
+            {filtered.length} lessons total
           </p>
         </div>
         <Link href="/admin/lessons/new">
-          <Button>
-            <Icon name="plus" size={16} />
+          <Button variant="primary">
+            <Icon name="plus" size={18} className="text-white mr-1" />
             New Lesson
           </Button>
         </Link>
@@ -135,26 +135,26 @@ export function LessonsClient({ initialLessons }: LessonsClientProps) {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-3 mb-4">
-        <div className="flex-1 min-w-48">
+      <div className="flex flex-wrap gap-3 mb-5">
+        <div className="flex-1 min-w-[200px]">
           <Input
-            placeholder="Search title, slug, language…"
+            placeholder="Search lessons..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         {[
-          { value: langFilter, set: setLangFilter, opts: langOptions, allLabel: "All languages" },
-          { value: skillFilter, set: setSkillFilter, opts: SKILL_OPTIONS, allLabel: "All skills" },
-          { value: levelFilter, set: setLevelFilter, opts: levelOptions, allLabel: "All levels" },
-          { value: statusFilter, set: setStatusFilter, opts: STATUS_OPTIONS, allLabel: "All statuses" },
-          { value: accessFilter, set: setAccessFilter, opts: ACCESS_OPTIONS, allLabel: "All access" },
+          { value: statusFilter, set: setStatusFilter, opts: STATUS_OPTIONS, allLabel: "All Status" },
+          { value: langFilter, set: setLangFilter, opts: langOptions, allLabel: "All Languages" },
+          { value: skillFilter, set: setSkillFilter, opts: SKILL_OPTIONS, allLabel: "All Skills" },
+          { value: levelFilter, set: setLevelFilter, opts: levelOptions, allLabel: "All Levels" },
+          { value: accessFilter, set: setAccessFilter, opts: ACCESS_OPTIONS, allLabel: "All Access" },
         ].map((f, idx) => (
           <select
             key={idx}
             value={f.value}
             onChange={(e) => f.set(e.target.value)}
-            className="px-3 py-2 text-sm rounded-input border border-n-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200"
+            className="w-[160px] px-3 py-2 text-[14px] rounded-input border border-n-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 text-n-700 font-medium"
           >
             {f.opts.map((o) => (
               <option key={o} value={o}>{o === "All" ? f.allLabel : o}</option>
@@ -163,71 +163,67 @@ export function LessonsClient({ initialLessons }: LessonsClientProps) {
         ))}
       </div>
 
-      <div className="bg-white rounded-card shadow-card overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="py-16 text-center text-n-400">
-            <Icon name="book" size={32} className="mx-auto mb-3 opacity-40" />
-            <p className="text-sm">No lessons match your filters.</p>
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="border-b border-n-200 bg-n-50">
+      <div className="bg-white rounded-2xl border border-n-200 overflow-hidden">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="border-b border-n-200">
+              <th className="px-4 py-3 text-left font-semibold text-n-500 text-[12px] uppercase tracking-[0.04em]">Title</th>
+              <th className="px-4 py-3 text-left font-semibold text-n-500 text-[12px] uppercase tracking-[0.04em]">Language</th>
+              <th className="px-4 py-3 text-left font-semibold text-n-500 text-[12px] uppercase tracking-[0.04em]">Skill</th>
+              <th className="px-4 py-3 text-left font-semibold text-n-500 text-[12px] uppercase tracking-[0.04em]">Level</th>
+              <th className="px-4 py-3 text-left font-semibold text-n-500 text-[12px] uppercase tracking-[0.04em]">Status</th>
+              <th className="px-4 py-3 text-left font-semibold text-n-500 text-[12px] uppercase tracking-[0.04em]">Premium</th>
+              <th className="px-4 py-3 text-left font-semibold text-n-500 text-[12px] uppercase tracking-[0.04em]">Updated</th>
+              <th className="px-4 py-3 text-left font-semibold text-n-500 text-[12px] uppercase tracking-[0.04em]">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
               <tr>
-                <th className="px-5 py-3 text-left font-medium text-n-500">Title</th>
-                <th className="px-5 py-3 text-left font-medium text-n-500">Language</th>
-                <th className="px-5 py-3 text-left font-medium text-n-500">Skill</th>
-                <th className="px-5 py-3 text-left font-medium text-n-500">Level</th>
-                <th className="px-5 py-3 text-left font-medium text-n-500">Q</th>
-                <th className="px-5 py-3 text-left font-medium text-n-500">Status</th>
-                <th className="px-5 py-3 text-left font-medium text-n-500">Updated</th>
-                <th className="px-5 py-3 text-right font-medium text-n-500">Actions</th>
+                <td colSpan={8} className="py-10 text-center text-n-400">
+                  No lessons found.
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-n-100">
-              {filtered.map((lesson) => {
+            ) : (
+              filtered.map((lesson, i) => {
                 const statusColor = LESSON_STATUS_COLORS[
                   lesson.status as LessonStatus
                 ] as "green" | "amber" | "blue" | "gray";
                 return (
-                  <tr key={lesson.id} className="hover:bg-n-50 transition-colors">
-                    <td className="px-5 py-3">
-                      <div className="font-medium text-n-800">{lesson.title}</div>
-                      <div className="text-xs text-n-400">{lesson.slug}</div>
+                  <tr 
+                    key={lesson.id} 
+                    className={`hover:bg-n-50 transition-colors ${i < filtered.length - 1 ? 'border-b border-n-100' : ''}`}
+                  >
+                    <td className="px-4 py-[14px] font-semibold text-n-900 max-w-[220px] truncate" title={lesson.title}>
+                      {lesson.title}
                     </td>
-                    <td className="px-5 py-3 text-n-600">{lesson.lang}</td>
-                    <td className="px-5 py-3 text-n-600">{lesson.skill}</td>
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-[14px] text-n-600">{lesson.lang}</td>
+                    <td className="px-4 py-[14px] text-n-600">{lesson.skill}</td>
+                    <td className="px-4 py-[14px]">
                       <Badge color="blue">{lesson.level}</Badge>
                     </td>
-                    <td className="px-5 py-3 text-n-500">{lesson.questionCount ?? 0}</td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge color={statusColor}>{lesson.status}</Badge>
-                        <button
-                          onClick={() => handleTogglePremium(lesson.id)}
-                          className="focus:outline-none"
-                          title="Toggle premium"
-                          disabled={isPending}
-                        >
-                          {lesson.premium ? (
-                            <Badge color="amber">Premium</Badge>
-                          ) : (
-                            <span className="text-xs text-n-300 hover:text-n-500">Free</span>
-                          )}
-                        </button>
-                      </div>
+                    <td className="px-4 py-[14px]">
+                      <Badge color={statusColor}>{lesson.status}</Badge>
                     </td>
-                    <td className="px-5 py-3 text-n-400">{lesson.updated}</td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Link href={`/admin/lessons/${lesson.id}/preview`}>
-                          <Button variant="ghost" size="sm" title="Preview">
-                            <Icon name="search" size={14} />
-                          </Button>
-                        </Link>
+                    <td className="px-4 py-[14px]">
+                      <button
+                        onClick={() => handleTogglePremium(lesson.id)}
+                        className="focus:outline-none"
+                        title="Toggle premium"
+                        disabled={isPending}
+                      >
+                        {lesson.premium ? (
+                          <Badge color="amber">Yes</Badge>
+                        ) : (
+                          <span className="text-n-300">—</span>
+                        )}
+                      </button>
+                    </td>
+                    <td className="px-4 py-[14px] text-n-400 text-[13px]">{lesson.updated}</td>
+                    <td className="px-4 py-[14px]">
+                      <div className="flex items-center gap-1">
                         <Link href={`/admin/lessons/${lesson.id}/edit`}>
-                          <Button variant="secondary" size="sm">
-                            <Icon name="edit" size={14} />
+                          <Button variant="ghost" size="sm">
                             Edit
                           </Button>
                         </Link>
@@ -235,9 +231,9 @@ export function LessonsClient({ initialLessons }: LessonsClientProps) {
                           <Button
                             variant="ghost"
                             size="sm"
+                            className="text-amber-500 hover:text-amber-600 hover:bg-amber-50"
                             onClick={() => handleUnpublish(lesson.id)}
                             disabled={isPending}
-                            title="Unpublish (back to draft)"
                           >
                             Unpublish
                           </Button>
@@ -246,10 +242,9 @@ export function LessonsClient({ initialLessons }: LessonsClientProps) {
                             <Button
                               variant="ghost"
                               size="sm"
+                              className="text-green-500 hover:text-green-600 hover:bg-green-50"
                               onClick={() => handlePublish(lesson.id)}
                               disabled={isPending}
-                              className="text-green-600 hover:text-green-700"
-                              title="Publish"
                             >
                               Publish
                             </Button>
@@ -258,33 +253,31 @@ export function LessonsClient({ initialLessons }: LessonsClientProps) {
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50"
                           onClick={() => setDeletingId(lesson.id)}
-                          className="hover:text-red-500"
-                          title="Archive"
                         >
-                          <Icon name="trash" size={14} />
+                          Del
                         </Button>
                       </div>
                     </td>
                   </tr>
                 );
-              })}
-            </tbody>
-          </table>
-        )}
+              })
+            )}
+          </tbody>
+        </table>
       </div>
 
       <Modal
         open={deletingId !== null}
         onClose={() => setDeletingId(null)}
-        title="Archive Lesson"
+        title="Delete Lesson"
       >
-        <p className="text-sm text-n-700 mb-6">
-          Archive &ldquo;{lessons.find((l) => l.id === deletingId)?.title}&rdquo;? It will be
-          hidden from public pages but can be found with the Archived filter.
+        <p className="text-[15px] text-n-600 leading-relaxed mb-6">
+          Are you sure you want to archive <strong>{lessons.find((l) => l.id === deletingId)?.title}</strong>? It will be hidden from public pages.
         </p>
-        <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={() => setDeletingId(null)}>
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={() => setDeletingId(null)}>
             Cancel
           </Button>
           <Button variant="danger" onClick={confirmDelete} disabled={isPending}>

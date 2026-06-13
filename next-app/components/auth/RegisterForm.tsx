@@ -3,21 +3,35 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 export function RegisterForm() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [terms, setTerms] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
-    setLoading(true);
-    const form = e.currentTarget;
-    const name = (form.elements.namedItem("name") as HTMLInputElement).value;
-    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
-    const password = (form.elements.namedItem("password") as HTMLInputElement).value;
 
+    if (password !== confirm) {
+      setError("Passwords do not match");
+      return;
+    }
+    if (!terms) {
+      setError("You must agree to continue");
+      return;
+    }
+
+    setLoading(true);
+    
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
@@ -39,54 +53,71 @@ export function RegisterForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4.5">
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-input px-3 py-2">
+        <p className="text-[13px] text-red-600 bg-red-50 border border-red-200 rounded-input px-3.5 py-2.5 mb-1">
           {error}
         </p>
       )}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-n-700">Name</label>
-        <input
-          name="name"
-          type="text"
-          required
-          placeholder="Your name"
-          className="px-3 py-2 text-sm rounded-input border border-n-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+      
+      <Input
+        label="Full name"
+        type="text"
+        required
+        placeholder="Your name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <Input
+        label="Email"
+        type="email"
+        required
+        placeholder="you@example.com"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <Input
+        label="Password"
+        type="password"
+        required
+        minLength={6}
+        placeholder="At least 6 characters"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+      <Input
+        label="Confirm password"
+        type="password"
+        required
+        placeholder="Repeat your password"
+        value={confirm}
+        onChange={(e) => setConfirm(e.target.value)}
+      />
+      
+      <label className="flex items-start gap-2.5 cursor-pointer mt-1">
+        <input 
+          type="checkbox" 
+          checked={terms} 
+          onChange={(e) => setTerms(e.target.checked)}
+          className="mt-1 accent-blue-500 w-4 h-4 rounded border-n-300"
         />
-      </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-n-700">Email</label>
-        <input
-          name="email"
-          type="email"
-          required
-          placeholder="you@example.com"
-          className="px-3 py-2 text-sm rounded-input border border-n-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
-        />
-      </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-n-700">Password</label>
-        <input
-          name="password"
-          type="password"
-          required
-          minLength={8}
-          placeholder="••••••••"
-          className="px-3 py-2 text-sm rounded-input border border-n-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
-        />
-        <p className="text-xs text-n-400">Minimum 8 characters</p>
-      </div>
-      <button
+        <span className="text-[13px] text-n-600 leading-relaxed">
+          I agree to the <Link href="#" className="text-blue-500 hover:text-blue-700 transition-colors">Terms of Service</Link> and <Link href="#" className="text-blue-500 hover:text-blue-700 transition-colors">Privacy Policy</Link>.
+        </span>
+      </label>
+
+      <Button
         type="submit"
         disabled={loading}
-        className="bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-medium py-2.5 rounded-btn transition-colors"
+        size="lg"
+        className="w-full justify-center mt-2 text-base py-3"
       >
-        {loading ? "Creating account…" : "Create account"}
-      </button>
-      <p className="text-sm text-n-500 text-center">
+        {loading ? "Creating account..." : "Create account"}
+      </Button>
+      
+      <p className="text-[14px] text-n-500 text-center mt-2">
         Already have an account?{" "}
-        <Link href="/login" className="text-blue-500 hover:text-blue-700 font-medium">
+        <Link href="/login" className="font-semibold text-blue-500 hover:text-blue-700 transition-colors">
           Log in
         </Link>
       </p>

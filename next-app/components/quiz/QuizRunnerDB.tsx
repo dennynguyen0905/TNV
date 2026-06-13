@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
+import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/utils";
 import type { PublicQuestion } from "@/server/mappers/questionMapper";
 
@@ -15,7 +15,7 @@ interface QuestionResult {
   explanation: string;
 }
 
-interface QuizResult {
+interface QuizResultData {
   score: number;
   totalQuestions: number;
   correctCount: number;
@@ -28,16 +28,16 @@ interface QuizResult {
 interface QuizRunnerDBProps {
   questions: PublicQuestion[];
   lessonId: string;
-  lessonTitle?: string;
 }
 
 type Answer = { selectedOptionIds: string[]; textAnswer?: string };
 
-export function QuizRunnerDB({ questions, lessonId, lessonTitle }: QuizRunnerDBProps) {
+export function QuizRunnerDB({ questions, lessonId }: QuizRunnerDBProps) {
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
-  const [result, setResult] = useState<QuizResult | null>(null);
+  const [result, setResult] = useState<QuizResultData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<"answering" | "result" | "review">("answering");
 
   const setOptionAnswer = (qId: string, optId: string) =>
     setAnswers((prev) => ({ ...prev, [qId]: { selectedOptionIds: [optId] } }));
@@ -83,8 +83,9 @@ export function QuizRunnerDB({ questions, lessonId, lessonTitle }: QuizRunnerDBP
         }),
       });
       if (!res.ok) throw new Error("Submission failed");
-      const data: QuizResult = await res.json();
+      const data: QuizResultData = await res.json();
       setResult(data);
+      setMode("result");
     } catch {
       setError("Failed to submit. Please try again.");
     } finally {
@@ -96,150 +97,153 @@ export function QuizRunnerDB({ questions, lessonId, lessonTitle }: QuizRunnerDBP
     setAnswers({});
     setResult(null);
     setError(null);
+    setMode("answering");
   };
 
   const getQResult = (qId: string) => result?.perQuestion.find((r) => r.questionId === qId);
 
-  return (
-    <div className="space-y-6">
-      {result && (
+  if (mode === "result" && result) {
+    return (
+      <div className="bg-white rounded-[20px] border border-n-200 p-8 md:p-10 text-center max-w-md mx-auto shadow-sm">
         <div
           className={cn(
-            "rounded-card px-5 py-4 border",
-            result.passed
-              ? "bg-green-50 border-green-200 text-green-800"
-              : "bg-red-50 border-red-200 text-red-800"
+            "w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5",
+            result.passed ? "bg-green-50 text-green-500" : "bg-amber-50 text-amber-500"
           )}
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-semibold text-base">
-                {result.passed ? "Well done!" : "Keep practising!"}
-              </p>
-              <p className="text-sm mt-0.5">
-                {result.correctCount} / {result.totalQuestions} correct &mdash; {result.percentage}%
-                {lessonTitle && (
-                  <span className="ml-2 text-xs opacity-70">{lessonTitle}</span>
-                )}
-              </p>
-            </div>
-            <Badge color={result.passed ? "green" : "red"}>
-              {result.passed ? "PASS" : "FAIL"}
-            </Badge>
-          </div>
-          {!result.saved && (
-            <p className="text-xs mt-2 opacity-80">
-              <Link href="/login" className="underline font-medium">
-                Log in
-              </Link>{" "}
-              to save this attempt and track your progress.
-            </p>
-          )}
+          <Icon name={result.passed ? "trophy" : "award"} size={36} />
+        </div>
+        <h3 className="text-2xl font-bold text-n-900 mb-2">
+          {result.correctCount} / {result.totalQuestions} correct
+        </h3>
+        <div className={cn("text-4xl font-extrabold mb-2", result.passed ? "text-green-500" : "text-amber-500")}>
+          {Math.round(result.percentage)}%
+        </div>
+        <p className="text-[15px] text-n-500 mb-6 leading-relaxed">
+          {result.passed
+            ? "Great job! You completed this lesson."
+            : "Keep practicing! Try again to improve your score."}
+        </p>
+        
+        {!result.saved && (
+          <p className="text-xs text-n-400 mb-6">
+            <Link href="/login" className="text-blue-500 hover:underline">Log in</Link> to save your progress.
+          </p>
+        )}
+
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link href="/">
+            <Button variant="primary" size="lg" className="w-full sm:w-auto">Continue learning</Button>
+          </Link>
+          <Button variant="outline" size="lg" onClick={() => setMode("review")} className="w-full sm:w-auto">
+            Review answers
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const submitted = mode === "review" && !!result;
+
+  return (
+    <div className="space-y-4">
+      {mode === "review" && (
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="font-bold text-n-900 text-lg">Reviewing Answers</h3>
+          <Button variant="outline" size="sm" onClick={handleReset}>Try again</Button>
         </div>
       )}
 
-      {questions.map((q) => {
+      {questions.map((q, i) => {
         const qr = getQResult(q.id);
-        const submitted = !!result;
         const correct = qr?.isCorrect ?? false;
         const incorrect = submitted && !correct;
 
         return (
-          <div
-            key={q.id}
-            className={cn(
-              "rounded-card border p-5 transition-colors",
-              submitted
-                ? correct
-                  ? "border-green-200 bg-green-50/40"
-                  : "border-red-200 bg-red-50/40"
-                : "border-n-200 bg-white"
-            )}
-          >
-            <p className="text-sm font-medium text-n-800 mb-3">
-              {q.sortOrder}. {q.prompt}
+          <div key={q.id} className="bg-white rounded-2xl border border-n-200 p-6 md:p-8">
+            <p className="text-[15px] font-bold text-n-800 mb-5 leading-relaxed">
+              <span className="text-blue-500 mr-2">Q{i + 1}.</span>
+              {q.prompt}
             </p>
 
             {q.type === "SINGLE_CHOICE" && (
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2.5">
                 {q.options.map((opt) => {
                   const selected = answers[q.id]?.selectedOptionIds.includes(opt.id) ?? false;
                   const isRight = submitted && qr?.correctOptionIds.includes(opt.id);
                   const isWrong = submitted && selected && !qr?.correctOptionIds.includes(opt.id);
+                  
                   return (
-                    <label
+                    <button
                       key={opt.id}
+                      onClick={() => !submitted && setOptionAnswer(q.id, opt.id)}
                       className={cn(
-                        "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
-                        !submitted && "hover:border-blue-200 hover:bg-blue-50",
-                        !submitted && selected && "border-blue-300 bg-blue-50",
-                        isRight && "border-green-300 bg-green-50",
-                        isWrong && "border-red-300 bg-red-50",
-                        submitted && !isRight && !isWrong && "opacity-60"
+                        "flex items-center gap-3 p-3 px-4 rounded-xl border-[1.5px] text-left transition-colors",
+                        isRight ? "border-green-500 bg-green-50 text-n-900" :
+                        isWrong ? "border-red-500 bg-red-50 text-n-900" :
+                        selected ? "border-blue-500 bg-blue-50 text-n-900" :
+                        "border-n-200 bg-white text-n-800",
+                        !submitted && !selected && "hover:border-n-300",
+                        submitted && "cursor-default",
+                        !submitted && "cursor-pointer"
                       )}
                     >
-                      <input
-                        type="radio"
-                        name={`q-${q.id}`}
-                        checked={selected}
-                        onChange={() => !submitted && setOptionAnswer(q.id, opt.id)}
-                        disabled={submitted}
-                        className="accent-blue-500 shrink-0"
-                      />
-                      <span className="text-sm text-n-700">{opt.text}</span>
-                      {isRight && (
-                        <span className="ml-auto text-green-600 text-xs font-medium">✓ Correct</span>
-                      )}
-                      {isWrong && (
-                        <span className="ml-auto text-red-600 text-xs font-medium">✗ Wrong</span>
-                      )}
-                    </label>
+                      <span className={cn(
+                        "flex items-center justify-center w-6 h-6 rounded-full border-2 shrink-0 transition-colors",
+                        isRight ? "border-green-500 bg-green-500 text-white" :
+                        isWrong ? "border-red-500 bg-red-500 text-white" :
+                        selected ? "border-blue-500 bg-blue-500 text-white" :
+                        "border-n-300 bg-transparent"
+                      )}>
+                        {(selected || isRight) && (
+                          <Icon name={isRight ? 'check' : isWrong ? 'x' : 'check'} size={14} color="currentColor" />
+                        )}
+                      </span>
+                      <span className="text-sm font-medium">{opt.text}</span>
+                    </button>
                   );
                 })}
               </div>
             )}
 
             {q.type === "MULTIPLE_CHOICE" && (
-              <div className="space-y-2">
-                <p className="text-xs text-n-400 mb-2">Select all that apply.</p>
+              <div className="flex flex-col gap-2.5">
                 {q.options.map((opt) => {
                   const selected = answers[q.id]?.selectedOptionIds.includes(opt.id) ?? false;
-                  const isRight = submitted && qr?.correctOptionIds.includes(opt.id) && selected;
-                  const missed = submitted && !selected && qr?.correctOptionIds.includes(opt.id);
+                  const isRight = submitted && qr?.correctOptionIds.includes(opt.id);
                   const isWrong = submitted && selected && !qr?.correctOptionIds.includes(opt.id);
+                  const missed = submitted && !selected && qr?.correctOptionIds.includes(opt.id);
+                  
                   return (
-                    <label
+                    <button
                       key={opt.id}
+                      onClick={() => !submitted && toggleMultiOption(q.id, opt.id)}
                       className={cn(
-                        "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
-                        !submitted && "hover:border-blue-200 hover:bg-blue-50",
-                        !submitted && selected && "border-blue-300 bg-blue-50",
-                        isRight && "border-green-300 bg-green-50",
-                        missed && "border-green-200 bg-green-50 opacity-70",
-                        isWrong && "border-red-300 bg-red-50",
-                        submitted && !isRight && !selected && "opacity-60"
+                        "flex items-center gap-3 p-3 px-4 rounded-xl border-[1.5px] text-left transition-colors",
+                        isRight ? "border-green-500 bg-green-50 text-n-900" :
+                        isWrong ? "border-red-500 bg-red-50 text-n-900" :
+                        missed ? "border-amber-400 bg-amber-50 text-n-900" :
+                        selected ? "border-blue-500 bg-blue-50 text-n-900" :
+                        "border-n-200 bg-white text-n-800",
+                        !submitted && !selected && "hover:border-n-300",
+                        submitted && "cursor-default",
+                        !submitted && "cursor-pointer"
                       )}
                     >
-                      <input
-                        type="checkbox"
-                        checked={selected}
-                        onChange={() => !submitted && toggleMultiOption(q.id, opt.id)}
-                        disabled={submitted}
-                        className="accent-blue-500 shrink-0"
-                      />
-                      <span className="text-sm text-n-700">{opt.text}</span>
-                      {isRight && (
-                        <span className="ml-auto text-green-600 text-xs font-medium">✓</span>
-                      )}
-                      {isWrong && (
-                        <span className="ml-auto text-red-600 text-xs font-medium">✗</span>
-                      )}
-                      {missed && (
-                        <span className="ml-auto text-green-600 text-xs font-medium">
-                          should select
-                        </span>
-                      )}
-                    </label>
+                      <span className={cn(
+                        "flex items-center justify-center w-6 h-6 rounded border-2 shrink-0 transition-colors",
+                        isRight ? "border-green-500 bg-green-500 text-white" :
+                        isWrong ? "border-red-500 bg-red-500 text-white" :
+                        missed ? "border-amber-400 bg-amber-400 text-white" :
+                        selected ? "border-blue-500 bg-blue-500 text-white" :
+                        "border-n-300 bg-transparent"
+                      )}>
+                        {(selected || isRight || missed) && (
+                          <Icon name={isRight ? 'check' : isWrong ? 'x' : missed ? 'check' : 'check'} size={14} color="currentColor" />
+                        )}
+                      </span>
+                      <span className="text-sm font-medium">{opt.text}</span>
+                    </button>
                   );
                 })}
               </div>
@@ -254,14 +258,14 @@ export function QuizRunnerDB({ questions, lessonId, lessonTitle }: QuizRunnerDBP
                   disabled={submitted}
                   placeholder="Type your answer…"
                   className={cn(
-                    "w-full px-3 py-2 text-sm rounded-input border bg-white",
-                    "focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500",
-                    submitted && correct && "border-green-400 bg-green-50",
-                    submitted && incorrect && "border-red-400 bg-red-50"
+                    "w-full px-4 py-3 text-[15px] rounded-xl border-[1.5px] bg-white transition-colors outline-none",
+                    submitted && correct ? "border-green-500 bg-green-50 text-green-900" :
+                    submitted && incorrect ? "border-red-500 bg-red-50 text-red-900" :
+                    "border-n-200 text-n-900 focus:border-blue-500"
                   )}
                 />
                 {submitted && incorrect && qr?.correctAnswer && (
-                  <p className="text-xs text-green-700 mt-1">
+                  <p className="text-sm font-medium text-green-600 mt-2">
                     Correct answer: &ldquo;{qr.correctAnswer}&rdquo;
                   </p>
                 )}
@@ -270,7 +274,6 @@ export function QuizRunnerDB({ questions, lessonId, lessonTitle }: QuizRunnerDBP
 
             {q.type === "DICTATION" && (
               <div>
-                <p className="text-xs text-n-500 mb-2">Type exactly what you hear.</p>
                 <textarea
                   value={answers[q.id]?.textAnswer ?? ""}
                   onChange={(e) => !submitted && setTextAnswer(q.id, e.target.value)}
@@ -278,52 +281,40 @@ export function QuizRunnerDB({ questions, lessonId, lessonTitle }: QuizRunnerDBP
                   placeholder="Type the sentence…"
                   rows={2}
                   className={cn(
-                    "w-full px-3 py-2 text-sm rounded-input border bg-white resize-none",
-                    "focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500",
-                    submitted && correct && "border-green-400 bg-green-50",
-                    submitted && incorrect && "border-red-400 bg-red-50"
+                    "w-full px-4 py-3 text-[15px] rounded-xl border-[1.5px] bg-white transition-colors outline-none resize-none",
+                    submitted && correct ? "border-green-500 bg-green-50 text-green-900" :
+                    submitted && incorrect ? "border-red-500 bg-red-50 text-red-900" :
+                    "border-n-200 text-n-900 focus:border-blue-500"
                   )}
                 />
                 {submitted && incorrect && qr?.correctAnswer && (
-                  <p className="text-xs text-green-700 mt-1">
-                    Correct: &ldquo;{qr.correctAnswer}&rdquo;
+                  <p className="text-sm font-medium text-green-600 mt-2">
+                    Correct answer: &ldquo;{qr.correctAnswer}&rdquo;
                   </p>
                 )}
               </div>
             )}
 
             {submitted && qr?.explanation && (
-              <div className="mt-3 pt-3 border-t border-n-100">
-                <p className="text-xs text-n-500">
-                  <span className="font-medium text-n-700">Explanation:</span> {qr.explanation}
+              <div className="mt-4 pt-4 border-t border-n-100">
+                <p className="text-sm text-n-600">
+                  <span className="font-bold text-n-800">Explanation:</span> {qr.explanation}
                 </p>
-              </div>
-            )}
-
-            {submitted && (
-              <div className="mt-2 flex justify-end">
-                <Badge color={correct ? "green" : "red"}>
-                  {correct ? "Correct" : "Incorrect"}
-                </Badge>
               </div>
             )}
           </div>
         );
       })}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm font-medium text-red-500 text-center">{error}</p>}
 
-      <div>
-        {!result ? (
-          <Button onClick={handleSubmit} disabled={!allAnswered || loading} className="w-full">
+      {!submitted && (
+        <div className="pt-4 flex gap-3">
+          <Button onClick={handleSubmit} disabled={!allAnswered || loading} size="lg" className="w-full sm:w-auto">
             {loading ? "Submitting…" : "Submit answers"}
           </Button>
-        ) : (
-          <Button variant="secondary" onClick={handleReset} className="w-full">
-            ↺ Try again
-          </Button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

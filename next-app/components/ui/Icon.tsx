@@ -2,6 +2,8 @@ interface IconProps {
   name: string;
   size?: number;
   className?: string;
+  style?: React.CSSProperties;
+  color?: string;
 }
 
 const icons: Record<string, (size: number) => React.ReactNode> = {
@@ -112,11 +114,11 @@ const icons: Record<string, (size: number) => React.ReactNode> = {
   ),
 };
 
-export function Icon({ name, size = 18, className }: IconProps) {
+export function Icon({ name, size = 18, className, style, color }: IconProps) {
   const render = icons[name];
   if (!render) return null;
   return (
-    <span className={className} style={{ display: "inline-flex", alignItems: "center" }}>
+    <span className={className} style={{ display: "inline-flex", alignItems: "center", color, ...style }}>
       {render(size)}
     </span>
   );

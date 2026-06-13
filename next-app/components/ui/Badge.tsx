@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 
-type BadgeColor = "blue" | "green" | "amber" | "red" | "gray" | "purple";
+export type BadgeColor = "blue" | "green" | "amber" | "red" | "gray" | "purple";
 
 interface BadgeProps {
   children: React.ReactNode;

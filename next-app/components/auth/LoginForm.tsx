@@ -3,19 +3,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 export function LoginForm() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const form = e.currentTarget;
-    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
-    const password = (form.elements.namedItem("password") as HTMLInputElement).value;
 
     try {
       const res = await fetch("/api/auth/login", {
@@ -38,43 +39,45 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-input px-3 py-2">
+        <p className="text-[13px] text-red-600 bg-red-50 border border-red-200 rounded-input px-3.5 py-2.5">
           {error}
         </p>
       )}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-n-700">Email</label>
-        <input
-          name="email"
-          type="email"
-          required
-          placeholder="you@example.com"
-          className="px-3 py-2 text-sm rounded-input border border-n-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
-        />
+      <Input
+        label="Email"
+        type="email"
+        required
+        placeholder="you@example.com"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <Input
+        label="Password"
+        type="password"
+        required
+        placeholder="Enter your password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+      <div className="flex justify-end -mt-2">
+        <Link href="#" className="text-[13px] font-medium text-blue-500 hover:text-blue-700 transition-colors">
+          Forgot password?
+        </Link>
       </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-n-700">Password</label>
-        <input
-          name="password"
-          type="password"
-          required
-          placeholder="••••••••"
-          className="px-3 py-2 text-sm rounded-input border border-n-200 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
-        />
-      </div>
-      <button
+      <Button
         type="submit"
         disabled={loading}
-        className="bg-blue-500 hover:bg-blue-600 disabled:opacity-60 text-white font-medium py-2.5 rounded-btn transition-colors mt-2"
+        size="lg"
+        className="w-full justify-center mt-1 text-base py-3"
       >
-        {loading ? "Logging in…" : "Log in"}
-      </button>
-      <p className="text-sm text-n-500 text-center">
-        No account?{" "}
-        <Link href="/register" className="text-blue-500 hover:text-blue-700 font-medium">
-          Sign up free
+        {loading ? "Logging in..." : "Log in"}
+      </Button>
+      <p className="text-[14px] text-n-500 text-center mt-2">
+        Don&apos;t have an account?{" "}
+        <Link href="/register" className="font-semibold text-blue-500 hover:text-blue-700 transition-colors">
+          Create one
         </Link>
       </p>
     </form>

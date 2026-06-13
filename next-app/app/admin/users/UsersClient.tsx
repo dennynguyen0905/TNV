@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
-import { Icon } from "@/components/ui/Icon";
 import type { AdminUser } from "@/server/mappers/userMapper";
 import {
   updateUserRoleAction,
@@ -107,11 +106,11 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
   }
 
   return (
-    <div className="max-w-5xl">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-8 max-w-[1200px]">
+      <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-n-900">Users</h1>
-          <p className="text-sm text-n-500 mt-1">
+          <h1 className="text-2xl font-extrabold mb-1 text-n-900">Users</h1>
+          <p className="text-[14px] text-n-500">
             {filtered.length} of {users.length} users
           </p>
         </div>
@@ -124,8 +123,8 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        <div className="flex-1 min-w-48">
+      <div className="flex flex-wrap gap-3 mb-5">
+        <div className="flex-1 min-w-[200px]">
           <Input
             placeholder="Search name or email…"
             value={search}
@@ -135,7 +134,7 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value as (typeof ROLE_OPTIONS)[number])}
-          className="px-3 py-2 text-sm rounded-input border border-n-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200"
+          className="w-[160px] px-3 py-2 text-[14px] rounded-input border border-n-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 text-n-700 font-medium"
         >
           {ROLE_OPTIONS.map((r) => (
             <option key={r} value={r}>
@@ -145,39 +144,43 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
         </select>
       </div>
 
-      <div className="bg-white rounded-card shadow-card overflow-hidden">
-        {filtered.length === 0 ? (
-          <div className="py-16 text-center text-n-400">
-            <Icon name="users" size={32} className="mx-auto mb-3 opacity-40" />
-            <p className="text-sm">No users match your filters.</p>
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="border-b border-n-200 bg-n-50">
+      <div className="bg-white rounded-2xl border border-n-200 overflow-hidden">
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="border-b border-n-200">
+              <th className="px-4 py-3 text-left font-semibold text-n-500 text-[12px] uppercase tracking-[0.04em]">Name</th>
+              <th className="px-4 py-3 text-left font-semibold text-n-500 text-[12px] uppercase tracking-[0.04em]">Email</th>
+              <th className="px-4 py-3 text-left font-semibold text-n-500 text-[12px] uppercase tracking-[0.04em]">Role</th>
+              <th className="px-4 py-3 text-left font-semibold text-n-500 text-[12px] uppercase tracking-[0.04em]">Premium</th>
+              <th className="px-4 py-3 text-left font-semibold text-n-500 text-[12px] uppercase tracking-[0.04em]">Status</th>
+              <th className="px-4 py-3 text-left font-semibold text-n-500 text-[12px] uppercase tracking-[0.04em]">Activity</th>
+              <th className="px-4 py-3 text-left font-semibold text-n-500 text-[12px] uppercase tracking-[0.04em]">Joined</th>
+              <th className="px-4 py-3 text-left font-semibold text-n-500 text-[12px] uppercase tracking-[0.04em]">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
               <tr>
-                <th className="px-5 py-3 text-left font-medium text-n-500">Name</th>
-                <th className="px-5 py-3 text-left font-medium text-n-500">Email</th>
-                <th className="px-5 py-3 text-left font-medium text-n-500">Role</th>
-                <th className="px-5 py-3 text-left font-medium text-n-500">Premium</th>
-                <th className="px-5 py-3 text-left font-medium text-n-500">Status</th>
-                <th className="px-5 py-3 text-left font-medium text-n-500">Activity</th>
-                <th className="px-5 py-3 text-left font-medium text-n-500">Joined</th>
-                <th className="px-5 py-3 text-right font-medium text-n-500">Actions</th>
+                <td colSpan={8} className="py-10 text-center text-n-400">
+                  No users found.
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-n-100">
-              {filtered.map((user) => {
+            ) : (
+              filtered.map((user, i) => {
                 const isSelf = user.id === currentUserId;
                 return (
-                  <tr key={user.id} className="hover:bg-n-50 transition-colors">
-                    <td className="px-5 py-3">
-                      <span className="font-medium text-n-800">{user.name}</span>
+                  <tr 
+                    key={user.id} 
+                    className={`hover:bg-n-50 transition-colors ${i < filtered.length - 1 ? 'border-b border-n-100' : ''}`}
+                  >
+                    <td className="px-4 py-[14px]">
+                      <span className="font-semibold text-n-900">{user.name}</span>
                       {isSelf && (
-                        <span className="ml-2 text-xs text-n-400">(you)</span>
+                        <span className="ml-2 text-[11px] text-n-400 uppercase tracking-wider font-bold">(you)</span>
                       )}
                     </td>
-                    <td className="px-5 py-3 text-n-500">{user.email}</td>
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-[14px] text-n-600 font-medium">{user.email}</td>
+                    <td className="px-4 py-[14px]">
                       <select
                         value={user.role}
                         disabled={isSelf || isPending}
@@ -187,13 +190,13 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
                         title={
                           isSelf ? "You cannot change your own role" : "Change role"
                         }
-                        className="px-2 py-1 text-xs rounded-input border border-n-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-2 py-1 text-xs rounded-input border border-n-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-n-700"
                       >
                         <option value="ADMIN">ADMIN</option>
                         <option value="LEARNER">LEARNER</option>
                       </select>
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-[14px]">
                       <button
                         onClick={() => handleTogglePremium(user)}
                         disabled={isPending}
@@ -201,13 +204,13 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
                         className="focus:outline-none disabled:opacity-50"
                       >
                         {user.isPremium ? (
-                          <Badge color="amber">Premium</Badge>
+                          <Badge color="amber">Yes</Badge>
                         ) : (
-                          <span className="text-xs text-n-300 hover:text-n-500">Free</span>
+                          <span className="text-n-300">—</span>
                         )}
                       </button>
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-[14px]">
                       <button
                         onClick={() => handleToggleStatus(user)}
                         disabled={isSelf || isPending}
@@ -223,22 +226,21 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
                         </Badge>
                       </button>
                     </td>
-                    <td className="px-5 py-3 text-n-500 text-xs whitespace-nowrap">
+                    <td className="px-4 py-[14px] text-n-500 text-[13px] whitespace-nowrap">
                       {user.attemptCount} attempts · {user.progressCount} lessons
                     </td>
-                    <td className="px-5 py-3 text-n-400">{user.createdAt}</td>
-                    <td className="px-5 py-3 text-right">
-                      <Button variant="secondary" size="sm" onClick={() => openEdit(user)}>
-                        <Icon name="edit" size={14} />
+                    <td className="px-4 py-[14px] text-n-400 text-[13px]">{user.createdAt}</td>
+                    <td className="px-4 py-[14px]">
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(user)}>
                         Edit
                       </Button>
                     </td>
                   </tr>
                 );
-              })}
-            </tbody>
-          </table>
-        )}
+              })
+            )}
+          </tbody>
+        </table>
       </div>
 
       <Modal
@@ -259,12 +261,12 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
             onChange={(e) => setEditEmail(e.target.value)}
           />
           {error && <p className="text-sm text-red-500">{error}</p>}
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setEditing(null)}>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="outline" onClick={() => setEditing(null)}>
               Cancel
             </Button>
-            <Button onClick={saveEdit} disabled={isPending}>
-              Save
+            <Button variant="primary" onClick={saveEdit} disabled={isPending}>
+              Save Changes
             </Button>
           </div>
         </div>

@@ -10,6 +10,7 @@ export async function getProgressForUser(userId: string) {
           id: true,
           title: true,
           slug: true,
+          level: { select: { code: true } },
           language: { select: { name: true, slug: true } },
           skill: { select: { name: true, slug: true } },
         },

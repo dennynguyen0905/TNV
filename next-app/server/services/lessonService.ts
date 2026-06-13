@@ -15,6 +15,11 @@ export async function getFeaturedFreePublicLessons(limit = 3) {
     .map(toPublicLessonCard);
 }
 
+export async function getPopularLessonsForLanguage(languageSlug: string, limit = 3) {
+  const lessons = await lessonRepo.getPublishedLessons({ languageSlug });
+  return lessons.slice(0, limit).map(toPublicLessonCard);
+}
+
 /**
  * Recommend published free lessons the learner has not completed yet.
  * Simple MVP heuristic: most recently published free lessons, excluding the

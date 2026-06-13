@@ -9,8 +9,9 @@ export async function getRecentAttemptsForUser(userId: string, limit = 10) {
         select: {
           title: true,
           slug: true,
-          language: { select: { slug: true } },
-          skill: { select: { slug: true } },
+          level: { select: { code: true } },
+          language: { select: { name: true, slug: true } },
+          skill: { select: { name: true, slug: true } },
         },
       },
     },

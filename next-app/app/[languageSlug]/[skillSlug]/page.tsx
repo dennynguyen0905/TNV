@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
 import { Icon } from "@/components/ui/Icon";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { getLanguageBySlug } from "@/server/repositories/languageRepository";
 import { getSkillBySlug } from "@/server/repositories/skillRepository";
 import { getPublicLessonsForSkill } from "@/server/services/lessonService";
+import { LessonListClient } from "./LessonListClient";
+import { SKILL_ICONS, SKILL_COLORS } from "@/data/constants/skills";
+import type { SkillName } from "@/data/types";
 
 export const dynamic = "force-dynamic";
 
@@ -35,77 +36,55 @@ export default async function SkillLessonListPage({ params }: Props) {
     getLanguageBySlug(languageSlug),
     getSkillBySlug(skillSlug),
   ]);
+  
   if (!lang || !skill) notFound();
 
   const lessons = await getPublicLessonsForSkill(languageSlug, skillSlug);
 
-  return (
-    <>
-      <Header />
-      <main>
-        <section className="bg-white border-b border-n-200 py-8">
-          <div className="max-w-container mx-auto px-6">
-            <nav className="text-sm text-n-400 mb-4">
-              <Link href="/" className="hover:text-n-600">
-                Home
-              </Link>
-              <span className="mx-2">›</span>
-              <Link href={`/${lang.slug}`} className="hover:text-n-600">
-                {lang.name}
-              </Link>
-              <span className="mx-2">›</span>
-              <span className="text-n-700">{skill.name}</span>
-            </nav>
-            <h1 className="text-2xl font-bold text-n-900">
-              {lang.name} — {skill.name}
-            </h1>
-            <p className="text-n-500 mt-1">{lessons.length} lessons available</p>
-          </div>
-        </section>
+  const skillName = skill.name as SkillName;
+  const colors = SKILL_COLORS[skillName] ?? { bg: "#eef2ff", accent: "#3b82f6" };
+  const iconName = SKILL_ICONS[skillName] ?? "book";
 
-        <section className="py-10">
+  return (
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      <main className="flex-1 pb-16">
+        <div className="max-w-container mx-auto px-6 pt-7">
+          <Breadcrumb
+            items={[
+              { label: 'Home', href: '/' },
+              { label: lang.name, href: `/${lang.slug}` },
+              { label: skill.name },
+            ]}
+          />
+        </div>
+
+        <section className="pt-8 pb-10">
           <div className="max-w-container mx-auto px-6">
-            {lessons.length === 0 ? (
-              <Card className="p-8 text-center text-n-400">
-                <p>No published lessons yet for {lang.name} {skill.name}.</p>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {lessons.map((lesson) => (
-                  <Link
-                    key={lesson.id}
-                    href={`/${lang.slug}/${skill.slug}/${lesson.slug}`}
-                    className="no-underline"
-                  >
-                    <Card hover className="p-5 flex flex-col gap-3">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge color="blue">{lesson.level}</Badge>
-                        {lesson.free ? (
-                          <Badge color="green">Free</Badge>
-                        ) : (
-                          <Badge color="amber">Premium</Badge>
-                        )}
-                        <span className="text-xs text-n-400 ml-auto flex items-center gap-1">
-                          <Icon name="clock" size={12} />~{lesson.estimatedMin} min
-                        </span>
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-n-900 mb-1">{lesson.title}</h3>
-                        <p className="text-sm text-n-500 line-clamp-2">{lesson.summary}</p>
-                      </div>
-                      <div className="mt-auto text-xs text-n-400">
-                        {lesson.questionCount} questions
-                        {lesson.hasPdf ? " · PDF available" : ""}
-                      </div>
-                    </Card>
-                  </Link>
-                ))}
+            <div className="flex items-center gap-4 mb-3">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: colors.bg, color: colors.accent }}
+              >
+                <Icon name={iconName} size={24} />
               </div>
-            )}
+              <h1 className="text-3xl md:text-4xl font-extrabold text-n-900">
+                {lang.name} {skill.name}
+              </h1>
+            </div>
+            <p className="text-[17px] text-n-500 max-w-2xl mb-8 leading-relaxed">
+              Browse {skill.name.toLowerCase()} lessons for {lang.name} learners, from beginner to advanced.
+            </p>
+
+            <LessonListClient
+              lessons={lessons}
+              languageSlug={lang.slug}
+              skillSlug={skill.slug}
+            />
           </div>
         </section>
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
+import { Breadcrumb } from "@/components/ui/Breadcrumb";
+import { Button } from "@/components/ui/Button";
 import { QuizRunnerDB } from "@/components/quiz/QuizRunnerDB";
 import { DictationPractice } from "@/components/lesson/DictationPractice";
 import { VocabCards } from "@/components/lesson/VocabCards";
@@ -35,6 +36,7 @@ export default async function LessonDetailPage({ params }: Props) {
     getLessonDetailForPublic({ languageSlug, skillSlug, lessonSlug }),
     getCurrentUser(),
   ]);
+  
   if (!lesson) notFound();
 
   const canAccessPremium = canAccessLesson(user, { isPremium: !lesson.free });
@@ -42,6 +44,7 @@ export default async function LessonDetailPage({ params }: Props) {
   const isListening = lesson.skill === "Listening";
   const isDictation = lesson.skill === "Dictation";
   const isVocab = lesson.skill === "Vocabulary";
+  const isReadingOrGrammar = !isListening && !isDictation && !isVocab;
 
   const dictationSentences = isDictation
     ? lesson.questions
@@ -57,281 +60,224 @@ export default async function LessonDetailPage({ params }: Props) {
     { id: 5, text: "He drinks coffee in the morning." },
   ];
 
-  const activeDictationSentences =
-    dictationSentences.length > 0 ? dictationSentences : fallbackDictation;
+  const activeDictationSentences = dictationSentences.length > 0 ? dictationSentences : fallbackDictation;
 
   const quizQuestions = !isDictation
-    ? lesson.questions.filter(
-        (q) => q.type === "SINGLE_CHOICE" || q.type === "MULTIPLE_CHOICE" || q.type === "FILL_BLANK"
-      )
+    ? lesson.questions.filter((q) => q.type === "SINGLE_CHOICE" || q.type === "MULTIPLE_CHOICE" || q.type === "FILL_BLANK")
     : [];
 
-  return (
-    <>
-      <Header />
-      <main className="max-w-container mx-auto px-6 py-10">
-        {/* Breadcrumb */}
-        <nav className="text-sm text-n-400 mb-6">
-          <Link href="/" className="hover:text-n-600">
-            Home
-          </Link>
-          <span className="mx-2">›</span>
-          <Link href={`/${languageSlug}`} className="hover:text-n-600">
-            {lesson.lang}
-          </Link>
-          <span className="mx-2">›</span>
-          <Link href={`/${languageSlug}/${skillSlug}`} className="hover:text-n-600">
-            {lesson.skill}
-          </Link>
-          <span className="mx-2">›</span>
-          <span className="text-n-700">{lesson.title}</span>
-        </nav>
+  const PremiumGate = () => (
+    <div className="p-10 text-center border-2 border-amber-200 bg-amber-50 rounded-2xl max-w-2xl mx-auto my-12">
+      <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-5">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+      </div>
+      <h2 className="text-2xl font-bold text-n-900 mb-3">Premium lesson</h2>
+      <p className="text-n-600 text-[15px] mb-6 max-w-md mx-auto leading-relaxed">
+        This lesson is available to premium members.{" "}
+        {!user && (
+          <>
+            <Link href="/login" className="text-blue-600 hover:underline font-semibold">Log in</Link>
+            {" "}or{" "}
+            <Link href="/register" className="text-blue-600 hover:underline font-semibold">create a free account</Link>
+            {" "}to get started.
+          </>
+        )}
+        {user && "Upgrade your account to access this lesson."}
+      </p>
+      <Link href="/">
+        <Button variant="primary" size="lg">Browse free lessons</Button>
+      </Link>
+    </div>
+  );
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Header card */}
-            <Card className="p-6">
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <Badge color="blue">{lesson.level}</Badge>
-                {lesson.free ? (
-                  <Badge color="green">Free</Badge>
-                ) : (
-                  <Badge color="amber">Premium</Badge>
-                )}
-                <Badge color="gray">{lesson.skill}</Badge>
-                <span className="text-xs text-n-400">~{lesson.estimatedMin} min</span>
-              </div>
-              <h1 className="text-2xl font-bold text-n-900 mb-2">{lesson.title}</h1>
-              <p className="text-n-600">{lesson.summary}</p>
-            </Card>
+  return (
+    <div className="flex flex-col min-h-screen">
+      <Header />
+      <main className="flex-1 pb-16">
+        <div className="max-w-container mx-auto px-6 pt-7">
+          <Breadcrumb
+            items={[
+              { label: 'Home', href: '/' },
+              { label: lesson.lang, href: `/${languageSlug}` },
+              { label: lesson.skill, href: `/${languageSlug}/${skillSlug}` },
+              { label: lesson.title },
+            ]}
+          />
+        </div>
+
+        {/* ── LISTENING ─────────────────────────────────────────── */}
+        {isListening && (
+          <div className="max-w-[800px] mx-auto px-6 pt-7">
+            <div className="flex flex-wrap gap-2 mb-3">
+              <Badge color={lesson.free ? "green" : "amber"}>{lesson.free ? "Free" : "Premium"}</Badge>
+              <Badge color="blue">{lesson.level}</Badge>
+              <Badge color="gray">~{lesson.estimatedMin} min</Badge>
+            </div>
+            <h1 className="text-3xl font-extrabold text-n-900 mb-2.5">{lesson.title}</h1>
+            <p className="text-[15px] text-n-500 mb-6">{lesson.lang} · {lesson.skill} · {lesson.level}</p>
 
             {!canAccessPremium ? (
-              /* Premium gate */
-              <Card className="p-8 text-center border-2 border-amber-200 bg-amber-50">
-                <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                </div>
-                <h2 className="text-lg font-semibold text-n-800 mb-2">Premium lesson</h2>
-                <p className="text-n-500 text-sm mb-4">
-                  This lesson is available to premium members.{" "}
-                  {!user && (
-                    <>
-                      <Link href="/login" className="text-blue-500 hover:underline">Log in</Link>
-                      {" "}or{" "}
-                      <Link href="/register" className="text-blue-500 hover:underline">create a free account</Link>
-                      {" "}to get started.
-                    </>
-                  )}
-                  {user && "Upgrade your account to access this lesson."}
-                </p>
-                <Link
-                  href="/"
-                  className="inline-block text-sm font-medium bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-btn transition-colors"
-                >
-                  Browse free lessons
-                </Link>
-              </Card>
+              <PremiumGate />
             ) : (
               <>
-                {/* ── LISTENING ─────────────────────────────────────────── */}
-                {isListening && (
-                  <Card className="p-6">
-                    <h2 className="text-base font-semibold text-n-800 mb-4">Listen</h2>
-                    <div className="flex items-center gap-4 bg-n-50 rounded-lg px-4 py-3 mb-4 border border-n-200">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                        <svg
-                          width="18"
-                          height="18"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="#3b82f6"
-                          strokeWidth="2"
-                        >
-                          <polygon points="5 3 19 12 5 21 5 3" fill="#3b82f6" />
-                        </svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="flex-1 h-1.5 bg-n-200 rounded-full overflow-hidden">
-                            <div className="w-0 h-full bg-blue-400 rounded-full" />
-                          </div>
-                          <span className="text-xs text-n-400 shrink-0">~{lesson.estimatedMin} min</span>
-                        </div>
-                        <p className="text-xs text-n-400 italic">
-                          {lesson.audioUrl ? lesson.audioUrl : "Audio file — not yet available"}
-                        </p>
-                      </div>
+                <div className="p-5 bg-blue-50 rounded-[14px] border border-blue-100 mb-6 text-[15px] text-blue-700 leading-relaxed">
+                  Listen to the audio and answer the questions below. You can replay the audio before submitting your answers.
+                </div>
+
+                {/* Mock AudioPlayer */}
+                <div className="bg-n-50 border border-n-200 rounded-[14px] p-4 flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center shrink-0">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  </div>
+                  <div className="flex-1">
+                    <div className="h-1.5 bg-n-200 rounded-full overflow-hidden w-full"><div className="w-0 h-full bg-blue-500"></div></div>
+                  </div>
+                  <div className="text-xs text-n-400 font-medium">Audio Placeholder</div>
+                </div>
+
+                {lesson.transcript && (
+                  <div className="mb-8">
+                    <h3 className="text-sm font-bold text-n-700 mb-3 uppercase tracking-wider">Transcript</h3>
+                    <div className="p-6 bg-white rounded-2xl border border-n-200 text-[15px] leading-[1.8] text-n-600 whitespace-pre-line">
+                      {lesson.transcript}
                     </div>
-
-                    {lesson.transcript && (
-                      <>
-                        <h3 className="text-sm font-semibold text-n-700 mb-2">Transcript</h3>
-                        <div className="bg-n-50 rounded-lg p-4 text-sm text-n-700 leading-relaxed whitespace-pre-line border border-n-100">
-                          {lesson.transcript}
-                        </div>
-                      </>
-                    )}
-                  </Card>
+                  </div>
                 )}
 
-                {/* ── READING / GRAMMAR ─────────────────────────────────── */}
-                {!isListening && !isDictation && !isVocab && (
-                  <Card className="p-6">
-                    <h2 className="text-base font-semibold text-n-800 mb-4">Read</h2>
-                    {lesson.content ? (
-                      <div className="prose prose-sm max-w-none text-n-700 leading-relaxed whitespace-pre-line">
-                        {lesson.content}
-                      </div>
-                    ) : (
-                      <p className="text-n-400 italic text-sm">
-                        Lesson text for &ldquo;{lesson.title}&rdquo; has not been added yet.
-                      </p>
-                    )}
-                  </Card>
-                )}
-
-                {/* ── DICTATION ─────────────────────────────────────────── */}
-                {isDictation && (
-                  <Card className="p-6">
-                    <h2 className="text-base font-semibold text-n-800 mb-4">Dictation Practice</h2>
-                    <DictationPractice sentences={activeDictationSentences} />
-                  </Card>
-                )}
-
-                {/* ── VOCABULARY ────────────────────────────────────────── */}
-                {isVocab && (
-                  <Card className="p-6">
-                    <h2 className="text-base font-semibold text-n-800 mb-4">Vocabulary</h2>
-                    <VocabCards words={VOCAB_PRACTICE_WORDS} />
-                  </Card>
-                )}
-
-                {/* ── QUIZ ──────────────────────────────────────────────── */}
-                {!isDictation && quizQuestions.length > 0 && (
-                  <Card className="p-6">
-                    <h2 className="text-base font-semibold text-n-800 mb-4">
-                      Quiz — {quizQuestions.length} question
-                      {quizQuestions.length !== 1 ? "s" : ""}
-                    </h2>
+                {quizQuestions.length > 0 && (
+                  <div>
+                    <h2 className="text-xl font-extrabold mb-5 text-n-900">Comprehension questions</h2>
                     <QuizRunnerDB
                       questions={quizQuestions}
                       lessonId={lesson.id}
-                      lessonTitle={lesson.title}
                     />
-                  </Card>
-                )}
-
-                {!isDictation && lesson.questions.length > 0 && quizQuestions.length === 0 && (
-                  <Card className="p-6">
-                    <h2 className="text-base font-semibold text-n-800 mb-2">
-                      Quiz — {lesson.questions.length} questions
-                    </h2>
-                    <p className="text-n-400 italic text-sm">
-                      Quiz available for this lesson type via the dictation practice above.
-                    </p>
-                  </Card>
+                  </div>
                 )}
               </>
             )}
           </div>
+        )}
 
-          {/* Sidebar */}
-          <div className="space-y-4">
-            {/* Lesson info */}
-            <Card className="p-5">
-              <h3 className="text-sm font-semibold text-n-800 mb-3">Lesson Info</h3>
-              <dl className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-n-500">Language</dt>
-                  <dd className="text-n-700 font-medium">{lesson.lang}</dd>
+        {/* ── DICTATION ─────────────────────────────────────────── */}
+        {isDictation && (
+          <div className="max-w-[680px] mx-auto px-6 pt-7">
+            <div className="flex flex-wrap gap-2 mb-3">
+              <Badge color={lesson.free ? "green" : "amber"}>{lesson.free ? "Free" : "Premium"}</Badge>
+              <Badge color="blue">{lesson.level}</Badge>
+            </div>
+            <h1 className="text-[28px] font-extrabold text-n-900 mb-2">{lesson.title}</h1>
+            <p className="text-[15px] text-n-500 mb-6">{lesson.lang} · {lesson.skill} · {lesson.level}</p>
+
+            {!canAccessPremium ? (
+              <PremiumGate />
+            ) : (
+              <>
+                <div className="p-5 bg-blue-50 rounded-[14px] border border-blue-100 mb-6 text-[15px] text-blue-700 leading-relaxed">
+                  Listen carefully and type what you hear.
                 </div>
-                <div className="flex justify-between">
-                  <dt className="text-n-500">Skill</dt>
-                  <dd className="text-n-700 font-medium">{lesson.skill}</dd>
+                <DictationPractice sentences={activeDictationSentences} />
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── VOCABULARY ────────────────────────────────────────── */}
+        {isVocab && (
+          <div className="max-w-[560px] mx-auto px-6 pt-8 text-center">
+            <h1 className="text-[28px] font-extrabold text-n-900 mb-2">{lesson.title}</h1>
+            <p className="text-[15px] text-n-500 mb-6">{lesson.lang} · {lesson.skill} · {lesson.level}</p>
+
+            {!canAccessPremium ? (
+              <PremiumGate />
+            ) : (
+              <VocabCards words={VOCAB_PRACTICE_WORDS} />
+            )}
+          </div>
+        )}
+
+        {/* ── READING / GRAMMAR ─────────────────────────────────── */}
+        {isReadingOrGrammar && (
+          <div className="max-w-container mx-auto px-6 pt-7">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-10">
+              <div className="min-w-0">
+                <div className="flex flex-wrap gap-2 mb-3">
+                  <Badge color={lesson.free ? "green" : "amber"}>{lesson.free ? "Free" : "Premium"}</Badge>
+                  <Badge color="blue">{lesson.level}</Badge>
+                  <Badge color="gray">~{lesson.estimatedMin} min</Badge>
+                  {quizQuestions.length > 0 && <Badge color="gray">{quizQuestions.length} Questions</Badge>}
                 </div>
-                <div className="flex justify-between">
-                  <dt className="text-n-500">Level</dt>
-                  <dd>
-                    <Badge color="blue">{lesson.level}</Badge>
-                  </dd>
+                <h1 className="text-3xl md:text-[36px] font-extrabold text-n-900 mb-2.5 leading-tight">{lesson.title}</h1>
+                <p className="text-[15px] text-n-500 mb-7">{lesson.lang} · {lesson.skill} · {lesson.level} · ~{lesson.estimatedMin} min</p>
+
+                {!canAccessPremium ? (
+                  <PremiumGate />
+                ) : (
+                  <>
+                    <div className="p-5 bg-blue-50 rounded-[14px] border border-blue-100 mb-7 text-[15px] text-blue-700 leading-relaxed">
+                      {isReadingOrGrammar ? "Read the text carefully, then answer the comprehension questions below." : "Complete the lesson exercises below."}
+                    </div>
+
+                    {lesson.content && (
+                      <div className="bg-white p-8 md:p-10 rounded-[20px] border border-n-200 mb-8 max-w-[760px]">
+                        <div className="prose prose-n max-w-none text-n-700 leading-[1.8] whitespace-pre-line text-[16px]">
+                          {lesson.content}
+                        </div>
+                      </div>
+                    )}
+
+                    {quizQuestions.length > 0 && (
+                      <div className="mt-10">
+                        <h2 className="text-[22px] font-extrabold text-n-900 mb-2">Did you understand the text?</h2>
+                        <p className="text-[15px] text-n-500 mb-6">Answer the questions below to test your comprehension.</p>
+                        <QuizRunnerDB
+                          questions={quizQuestions}
+                          lessonId={lesson.id}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Sidebar */}
+              <div className="space-y-4">
+                <div className="p-5 bg-white rounded-2xl border border-n-200 shadow-sm">
+                  <h4 className="text-[14px] font-bold text-n-900 mb-3">Lesson progress</h4>
+                  <div className="h-1.5 bg-n-100 rounded-full overflow-hidden w-full"><div className="w-[10%] h-full bg-blue-500 rounded-full"></div></div>
+                  <p className="text-xs text-n-400 mt-2">Started</p>
                 </div>
-                <div className="flex justify-between">
-                  <dt className="text-n-500">Duration</dt>
-                  <dd className="text-n-700">~{lesson.estimatedMin} min</dd>
-                </div>
-                {!isDictation && (
-                  <div className="flex justify-between">
-                    <dt className="text-n-500">Questions</dt>
-                    <dd className="text-n-700">{lesson.questionCount}</dd>
+
+                {lesson.audioUrl && canAccessPremium && (
+                  <div className="p-5 bg-white rounded-2xl border border-n-200 shadow-sm">
+                    <h4 className="text-[14px] font-bold text-n-900 mb-3">Listen to the text</h4>
+                    <div className="bg-n-50 rounded-xl p-3 flex justify-center items-center">
+                      <span className="text-xs text-n-400 font-medium">Audio Placeholder</span>
+                    </div>
                   </div>
                 )}
-                <div className="flex justify-between">
-                  <dt className="text-n-500">Access</dt>
-                  <dd>
-                    {lesson.free ? (
-                      <Badge color="green">Free</Badge>
-                    ) : (
-                      <Badge color="amber">Premium</Badge>
-                    )}
-                  </dd>
-                </div>
-              </dl>
-            </Card>
 
-            {/* Worksheet / PDF download placeholder */}
-            {canAccessPremium && (
-              <Card className="p-5">
-                <h3 className="text-sm font-semibold text-n-800 mb-3">Worksheet</h3>
-                {lesson.pdfUrl ? (
-                  <a
-                    href={lesson.pdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 text-sm font-medium bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-btn transition-colors"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                    Download PDF
-                  </a>
-                ) : (
-                  <button
-                    type="button"
-                    disabled
-                    title="PDF worksheet is not available yet"
-                    className="w-full flex items-center justify-center gap-2 text-sm font-medium bg-n-100 text-n-400 px-4 py-2.5 rounded-btn cursor-not-allowed"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                    PDF coming soon
-                  </button>
+                {canAccessPremium && VOCAB_PRACTICE_WORDS.length > 0 && (
+                  <div className="p-5 bg-white rounded-2xl border border-n-200 shadow-sm">
+                    <h4 className="text-[14px] font-bold text-n-900 mb-4">Key vocabulary</h4>
+                    <div className="flex flex-col gap-3">
+                      {VOCAB_PRACTICE_WORDS.slice(0, 3).map((v) => (
+                        <div key={v.word} className="p-3 bg-n-50 rounded-[10px]">
+                          <div className="text-[14px] font-bold text-blue-600 mb-1">{v.word}</div>
+                          <div className="text-[13px] text-n-600 leading-tight">{v.meaning}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
-                <p className="text-xs text-n-400 mt-2">
-                  Printable worksheets are generated in a later phase.
-                </p>
-              </Card>
-            )}
-
-            {/* Back link */}
-            <Link
-              href={`/${languageSlug}/${skillSlug}`}
-              className="block text-sm text-blue-500 hover:text-blue-700 hover:underline"
-            >
-              ← Back to {lesson.skill} lessons
-            </Link>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </main>
       <Footer />
-    </>
+    </div>
   );
 }
